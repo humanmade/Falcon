@@ -20,8 +20,7 @@ class bbSub {
 	}
 
 	public static function load() {
-		require_once(dirname(__FILE__) . '/bbSubscriptions.php');
-
+		spl_autoload_register(array(get_called_class(), 'autoload'));
 		bbSubscriptions::bootstrap();
 	}
 
@@ -41,6 +40,17 @@ class bbSub {
 	 */
 	public static function deactivation() {
 		wp_clear_scheduled_hook('bbsub_check_inbox');
+	}
+
+	public static function autoload($class) {
+		if (strpos($class, 'bbSubscriptions') !== 0 && strpos($class, 'EmailReplyParser') !== 0) {
+			return;
+		}
+
+		$filename = __DIR__ . '/library/' . str_replace('_', '/', $class) . '.php';
+		if (file_exists($filename)) {
+			require_once($filename);
+		}
 	}
 }
 
