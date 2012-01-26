@@ -5,7 +5,7 @@ class bbSubscriptions_Handler_Lamson implements bbSubscriptions_Handler {
 		
 	}
 
-	public static function send_mail($user, $subject, $text, $headers, $attrs) {
+	public static function send_mail($user, $subject, $content, $headers, $attrs) {
 		extract($attrs);
 
 		// For some stupid reason, a lot of plugins override 'From:'
@@ -21,7 +21,7 @@ class bbSubscriptions_Handler_Lamson implements bbSubscriptions_Handler {
 		add_filter('phpmailer_init', $mailer_filter, 9999);
 
 		// Send notification email
-		wp_mail( $user->user_email, $subject, $text, $headers );
+		wp_mail( $user->user_email, $subject, $content, $headers );
 
 		// And unregister
 		remove_filter('phpmailer_init', $mailer_filter, 9999);
