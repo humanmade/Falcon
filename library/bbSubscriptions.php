@@ -51,6 +51,28 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 	}
 
 	/**
+	 * Get the reply-to/from address for a topic and user
+	 *
+	 * @param int $topic Topic ID
+	 * @param WP_User $user User object
+	 * @return string Full email address
+	 */
+	public static function get_reply_address($topic, $user) {
+		return sprintf('me+bbsub-%s-%s@ryanmccue.info', $topic, self::get_hash($topic, $user->ID));
+	}
+
+	/**
+	 * Get the verification hash for a topic and user
+	 *
+	 * @param int $topic Topic ID
+	 * @param WP_User $user User object
+	 * @return string Verification hash (10 characters long)
+	 */
+	public static function get_hash($topic, $user) {
+		return substr(wp_hash('bbsub_reply_by_email' . $topic . $user->ID), -12, 10);
+	}
+
+	/**
 	 * Add a more frequent cron schedule
 	 *
 	 * We need to check the inbox much more regularly than hourly, so here we

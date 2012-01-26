@@ -12,7 +12,7 @@ class bbSubscriptions_Handler_Lamson implements bbSubscriptions_Handler {
 		// without checking if it's the default, so we need to
 		// filter instead of using $headers
 		$mailer_filter = function (&$phpmailer) use ($topic_id, $reply_author_name, $user) {
-			$phpmailer->From = sprintf('me+bbsub-%s-%s@ryanmccue.info', $topic_id, wp_create_nonce('bbsub_reply_by_email-' . $user->ID));
+			$phpmailer->From = bbSubscriptions::get_reply_address($topic_id, $user);
 			$phpmailer->FromName = $reply_author_name;
 			$phpmailer->AddReplyTo($phpmailer->From, $phpmailer->FromName);
 		};
