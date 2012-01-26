@@ -1,16 +1,53 @@
 <?php
 
 class bbSubscriptions extends Sputnik_Library_Plugin {
-	protected static $handler;
+	protected static $handler = null;
 
 	public static function bootstrap() {
 		// Kill the defaults
 		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
 
-		// And add our own!
-		self::register_hooks();
+		try {
+			// Check for a handler first
+			self::$handler = self::get_handler();
 
-		self::$handler = new bbSubscriptions_Handler_Lamson();
+			// Then add our own hooks!
+			self::register_hooks();
+		}
+		catch (Exception $e) {
+			add_action('all_admin_notices', function () {
+				printf('<div class="error"><p>Problem setting up bbSubscriptions! %s</p></div>', $e->getMessage());
+			});
+
+			return false;
+		}
+	}
+
+	/**
+	 * Get a mail handler based on the config
+	 *
+	 * @return bbSubscriptions_Handler
+	 */
+	protected static function get_handler() {
+		$type = get_option('bbsub_handler_type', 'imap');
+		$handler = null;
+
+		switch ($type) {
+			case 'lamson':
+				$handler = new bbSubscriptions_Handler_Lamson();
+				break;
+			case 'imap':
+				self::$handler = new bbSubscriptions_Handler_IMAP();
+				break;
+		}
+
+		$handler = apply_filters('bbsub_handler_' . $type, $handler);
+
+		if ($handler === null) {
+			throw new Exception('Handler could not be found.');
+		}
+
+		return $handler;
 	}
 
 	/**
@@ -32,6 +69,10 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 	 * @wp-filter bbp_new_reply 1
 	 */
 	public static function notify_on_reply( $reply_id = 0, $topic_id = 0, $forum_id = 0, $anonymous_data = false, $reply_author = 0 ) {
+		if (self::$handler === null) {
+			return false;
+		}
+
 		global $wpdb;
 
 		if ( !bbp_is_subscriptions_active() )
@@ -90,6 +131,10 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 	 * @wp-action bbsub_check_inbox
 	 */
 	public static function check_inbox() {
+		if (self::$handler === null) {
+			return false;
+		}
+
 		self::$handler->check_inbox();
 	}
 }
