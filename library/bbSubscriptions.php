@@ -15,7 +15,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 			self::register_hooks();
 		}
 		catch (Exception $e) {
-			add_action('all_admin_notices', function () {
+			add_action('all_admin_notices', function () use ($e) {
 				printf('<div class="error"><p>Problem setting up bbSubscriptions! %s</p></div>', $e->getMessage());
 			});
 
@@ -37,7 +37,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 				$handler = new bbSubscriptions_Handler_Lamson();
 				break;
 			case 'imap':
-				self::$handler = new bbSubscriptions_Handler_IMAP();
+				$handler = new bbSubscriptions_Handler_IMAP();
 				break;
 		}
 
