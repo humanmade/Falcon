@@ -1,6 +1,8 @@
 <?php
 
 class bbSubscriptions extends Sputnik_Library_Plugin {
+	protected static $handler;
+
 	public static function bootstrap() {
 		// Kill the defaults
 		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
@@ -76,7 +78,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 
 			$headers = array();
 
-			self::$handler->send_mail($user, $subject, $text, $headers, compact($topic_id, $reply_author_name))
+			self::$handler->send_mail($user, $subject, $text, $headers, compact($topic_id, $reply_author_name));
 		}
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
