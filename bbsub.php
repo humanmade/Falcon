@@ -43,7 +43,7 @@ class bbSub {
 	}
 
 	public static function autoload($class) {
-		if (strpos($class, 'bbSubscriptions') !== 0 && strpos($class, 'EmailReplyParser') !== 0) {
+		if (strpos($class, 'bbSubscriptions') !== 0 && strpos($class, '\\EmailReplyParser') !== 0) {
 			return;
 		}
 
