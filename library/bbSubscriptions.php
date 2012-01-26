@@ -109,11 +109,13 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 				continue;
 
 			$text = "%1\$s\n\n";
-			$text .= "--\nReply to this email or view it online:\n%2\$s\n\nYou are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+			$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
+			$text .= "You are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+
 			$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
 
 			// For plugins to filter titles per reply/topic/user
-			$subject = apply_filters( 'bbp_subscription_mail_title', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id, $user_id );
+			$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
 			if ( empty( $subject ) )
 				continue;
 
