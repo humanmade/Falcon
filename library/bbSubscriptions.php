@@ -75,25 +75,29 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 
 		global $wpdb;
 
-		if ( !bbp_is_subscriptions_active() )
+		if (!bbp_is_subscriptions_active()) {
 			return false;
+		}
 
 		$reply_id = bbp_get_reply_id( $reply_id );
 		$topic_id = bbp_get_topic_id( $topic_id );
 		$forum_id = bbp_get_forum_id( $forum_id );
 
-		if ( !bbp_is_reply_published( $reply_id ) )
+		if (!bbp_is_reply_published($reply_id)) {
 			return false;
+		}
 
-		if ( !bbp_is_topic_published( $topic_id ) )
+		if (!bbp_is_topic_published($topic_id)) {
 			return false;
+		}
 
-		$user_ids = bbp_get_topic_subscribers( $topic_id, true );
-		if ( empty( $user_ids ) )
+		$user_ids = bbp_get_topic_subscribers($topic_id, true);
+		if (empty($user_ids)) {
 			return false;
+		}
 
 		// Poster name
-		$reply_author_name = bbp_get_reply_author_display_name( $reply_id );
+		$reply_author_name = bbp_get_reply_author_display_name($reply_id);
 
 		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
@@ -104,7 +108,6 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 			if ( !empty( $reply_author ) && (int) $user_id == (int) $reply_author )
 				continue;
 
-			// For plugins to filter messages per reply/topic/user
 			$text = "%1\$s\n\n";
 			$text .= "--\nReply to this email or view it online:\n%2\$s\n\nYou are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
 			$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
