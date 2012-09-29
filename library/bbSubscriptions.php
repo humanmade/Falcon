@@ -136,7 +136,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 		});
 
 		// Get userdata for all users
-		array_map(function ($id) {
+		$user_ids = array_map(function ($id) {
 			return get_userdata($id);
 		}, $user_ids);
 
