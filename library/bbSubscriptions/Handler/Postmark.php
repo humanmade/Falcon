@@ -16,7 +16,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 		);
 	}
 
-	public static function send_mail($users, $subject, $content, $headers, $attrs) {
+	public static function send_mail($users, $subject, $content, $attrs) {
 		extract($attrs);
 
 		// For some stupid reason, a lot of plugins override 'From:'

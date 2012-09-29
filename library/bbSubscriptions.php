@@ -147,9 +147,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 		$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
 		$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
 
-		$headers = array();
-
-		self::$handler->send_mail($user_ids, $subject, $text, $headers, compact('topic_id', 'reply_author_name'));
+		self::$handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
