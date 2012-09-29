@@ -17,7 +17,7 @@ require_once bbSub::$path . '/vendor/postmark-inbound/lib/Postmark/Autoloader.ph
  */
 class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	public function __construct() {
-		$this->api_key = '2a464cc2-8982-4742-85b9-f8831f2d26f6';
+		$this->api_key = '';
 	}
 
 	public function send_mail($users, $subject, $content, $attrs) {
