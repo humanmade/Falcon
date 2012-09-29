@@ -46,11 +46,12 @@ class bbSub {
 	}
 
 	public static function autoload($class) {
-		if (strpos($class, 'bbSubscriptions') !== 0 && strpos($class, '\\EmailReplyParser') !== 0) {
+		if (strpos($class, 'bbSubscriptions') !== 0 && strpos($class, 'EmailReplyParser') !== 0) {
 			return;
 		}
 
-		$filename = self::$path . '/library/' . str_replace('_', '/', $class) . '.php';
+		$filename = str_replace(array('_', '\\'), '/', $class);
+		$filename = self::$path . '/library/' . $filename . '.php';
 		if (file_exists($filename)) {
 			require_once($filename);
 		}
