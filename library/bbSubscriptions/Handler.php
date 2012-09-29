@@ -7,4 +7,6 @@ interface bbSubscriptions_Handler {
 	 * Check the inbox for replies
 	 */
 	public static function check_inbox();
+
+	public static function handle_post();
 }

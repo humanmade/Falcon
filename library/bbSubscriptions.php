@@ -33,12 +33,15 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 		$handler = null;
 
 		switch ($type) {
-			case 'lamson':
-				$handler = new bbSubscriptions_Handler_Lamson();
+			case 'postmark':
+				$handler = new bbSubscriptions_Handler_Postmark();
 				break;
-			case 'imap':
-				$handler = new bbSubscriptions_Handler_IMAP();
-				break;
+		#	case 'lamson':
+		#		$handler = new bbSubscriptions_Handler_Lamson();
+		#		break;
+		#	case 'imap':
+		#		$handler = new bbSubscriptions_Handler_IMAP();
+		#		break;
 		}
 
 		$handler = apply_filters('bbsub_handler_' . $type, $handler);
