@@ -13,6 +13,8 @@ Author URI: http://ryanmccue.info/
 */
 
 class bbSub {
+	public static $path;
+
 	public static function verify() {
 		remove_action('all_admin_notices', array('bbSub', 'report_error'));
 		//Sputnik::check(__FILE__, array('bbSub', 'load'));
@@ -20,6 +22,7 @@ class bbSub {
 	}
 
 	public static function load() {
+		self::$path = __DIR__;
 		spl_autoload_register(array(get_called_class(), 'autoload'));
 		bbSubscriptions::bootstrap();
 	}
@@ -47,7 +50,7 @@ class bbSub {
 			return;
 		}
 
-		$filename = __DIR__ . '/library/' . str_replace('_', '/', $class) . '.php';
+		$filename = self::$path . '/library/' . str_replace('_', '/', $class) . '.php';
 		if (file_exists($filename)) {
 			require_once($filename);
 		}
