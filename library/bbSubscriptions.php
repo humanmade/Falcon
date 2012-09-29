@@ -29,7 +29,7 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 	 * @return bbSubscriptions_Handler
 	 */
 	protected static function get_handler() {
-		$type = get_option('bbsub_handler_type', 'imap');
+		$type = get_option('bbsub_handler_type', 'postmark');
 		$handler = null;
 
 		switch ($type) {
