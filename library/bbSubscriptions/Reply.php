@@ -1,5 +1,7 @@
 <?php
 
+use \EmailReplyParser\EmailReplyParser;
+
 class bbSubscriptions_Reply {
 	public $from;
 	public $subject;
@@ -17,17 +19,36 @@ class bbSubscriptions_Reply {
 			return false;
 		}
 
-		$email = new \EmailReplyParser\Email();
-		$parsed = &$email->read($this->body);
-
-		$content = '';
-		foreach ($parsed as &$fragment) {
-			if ($fragment->isSignature()) {
+		// Parse the body and remove signatures, and reformat
+		$parts = array();
+		$fragments = EmailReplyParser::read($this->body);
+		foreach ($fragments as $fragment) {
+			// We don't care about hidden parts (signatures, eg)
+			if ($fragment->isHidden()) {
 				continue;
 			}
+			elseif ($fragment->isQuoted()) {
+				// Remove leading quote symbols
+				$quoted = preg_replace('/^> */m', '', $fragment->getContent());
 
-			$content .= $fragment->getContent();
+				// Reparse to ensure that we strip signatures from here too
+				$subfragments = EmailReplyParser::read($quoted);
+				$subparts = array();
+				foreach ($subfragments as $subfrag) {
+					if ($subfrag->isHidden()) {
+						continue;
+					}
+
+					$subparts[] = $subfrag->getContent();
+				}
+
+				$parts[] = '<blockquote>' . implode("\n", $subparts) . '</blockquote>';
+			}
+			else {
+				$parts[] = $fragment->getContent();
+			}
 		}
+		$content = implode("\n", $parts);
 
 		$reply = array(
 			'post_parent'   => $this->topic, // topic ID
