@@ -67,12 +67,16 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 	/**
 	 * Get the verification hash for a topic and user
 	 *
+	 * Uses a HMAC rather than a straight hash to avoid vulnerabilities.
+	 * @see http://benlog.com/articles/2008/06/19/dont-hash-secrets/
+	 * @see http://blog.jcoglan.com/2012/06/09/why-you-should-never-use-hash-functions-for-message-authentication/
+	 *
 	 * @param int $topic Topic ID
 	 * @param WP_User $user User object
 	 * @return string Verification hash (10 characters long)
 	 */
 	public static function get_hash($topic, $user) {
-		return substr(wp_hash('bbsub_reply_by_email' . $topic . $user->ID), -12, 10);
+		return hash_hmac('sha1', $topic . '|' . $user->ID, 'bbsub_reply_by_email');
 	}
 
 	/**
