@@ -164,4 +164,16 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 
 		self::$handler->check_inbox();
 	}
+
+	/**
+	 * @wp-action admin_post_nopriv_bbsub
+	 * @wp-action admin_post_bbsub
+	 */
+	public static function post_callback() {
+		if (self::$handler === null) {
+			return false;
+		}
+
+		self::$handler->handle_post();
+	}
 }
