@@ -24,10 +24,9 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 		extract($attrs);
 
 		foreach ($users as $user) {
-			$replyto = sprintf('%s <%s>', $reply_author_name, bbSubscriptions::get_reply_address($topic_id, $user));
 			$data = array(
-				'From' => 'reply@bbpress.test.renku.me',
-				'ReplyTo' => $replyto,
+				'From' => sprintf('%s <reply@bbpress.test.renku.me>', $reply_author_name),
+				'ReplyTo' => bbSubscriptions::get_reply_address($topic_id, $user),
 				'To' => $user->user_email,
 				'Subject' => $subject,
 				'TextBody' => $content,
