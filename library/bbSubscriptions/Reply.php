@@ -51,15 +51,11 @@ class bbSubscriptions_Reply {
 			throw new Exception('Plus part empty');
 		}
 
-		// 'plus' => sprintf( 'bbsub-%s-%s', $topic, $user_nonce )
+		// 'plus' => sprintf( '%s-%s', $topic, $user_nonce )
 		$plus = explode('-', $matches['plus']);
-		if (count($plus) < 3) {
+		if (count($plus) < 2) {
 			throw new Exception('Plus part not formatted correctly');
 		}
-		list($prefix, $topic, $nonce) = $plus;
-		return compact('prefix', 'topic', 'nonce');
-
-		// maybe we'll do something with $prefix later
-		// such as multiple blogs per address or something
+		return $plus;
 	}
 }
