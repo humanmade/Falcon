@@ -1,41 +1,67 @@
 <?php
+/**
+ * Postmark API handler
+ *
+ * @package bbSubscriptions
+ * @subpackage Handlers
+ */
 
+require_once bbSub::$path . '/vendor/postmark-inbound/lib/Postmark/Autoloader.php';
+\Postmark\Autoloader::register();
+
+/**
+ * Postmark API handler
+ *
+ * @package bbSubscriptions
+ * @subpackage Handlers
+ */
 class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	public function __construct() {
-		require_once bbSub::$path . '/vendor/postmark-inbound/lib/Postmark/Autoloader.php';
-		\Postmark\Autoloader::register();
-
-		$this->options = array(
-			'host' => 'imap.gmail.com',
-			'ssl' => true,
-			'port' => 993,
-			'authentication' => array(
-				'user' => 'me@ryanmccue.info',
-				'pass' => 'bfqqiunulpshlnek----preferably not, \'k?'
-			)
-		);
+		$this->api_key = '';
 	}
 
 	public static function send_mail($users, $subject, $content, $attrs) {
 		extract($attrs);
 
-		// For some stupid reason, a lot of plugins override 'From:'
-		// without checking if it's the default, so we need to
-		// filter instead of using $headers
-		$mailer_filter = function (&$phpmailer) use ($topic_id, $reply_author_name, $user) {
-			$phpmailer->From = bbSubscriptions::get_reply_address($topic_id, $user);
-			$phpmailer->FromName = $reply_author_name;
-			$phpmailer->AddReplyTo($phpmailer->From, $phpmailer->FromName);
-		};
+		foreach ($users as $user) {
+			$from = sprintf('%s <%s>', $reply_author_name, bbSubscriptions::get_reply_address($topic_id, $user));
+			$data = array(
+				'From' => $from,
+				'ReplyTo' => $from,
+				'To' => $user->user_email,
+				'Subject' => $subject,
+				'TextBody' => $content,
+			);
 
-		// Register
-		add_filter('phpmailer_init', $mailer_filter, 9999);
+			self::send_single($data);
+		}
+	}
 
-		// Send notification email
-		wp_mail( $user->user_email, $subject, $content, $headers );
+	protected static function send_single($data) {
+		$headers = array(
+			'Accept: application/json',
+			'Content-Type: application/json',
+			'X-Postmark-Server-Token: ' . $this->api_key,
+		);
 
-		// And unregister
-		remove_filter('phpmailer_init', $mailer_filter, 9999);
+		$response = wp_remote_post('http://api.postmarkapp.com/email', array(
+			'headers' => $headers,
+			'body' => json_encode($this->data)
+		));
+
+		$code = wp_remote_retrieve_response_code($response);
+		switch ($code) {
+			case 200:
+				return true;
+			case 401:
+				throw new Exception('Invalid API key', 401);
+			case 422:
+				throw new Exception('Error with sent body: ' . wp_remote_retrieve_body($response), 422);
+			case 500:
+				throw new Exception('Postmark server error', 500);
+			default:
+				throw new Exception('Unknown error', $code);
+		}
 	}
 
 	/**
@@ -47,6 +73,15 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 
 	public static function handle_post() {
 		$inbound = new \Postmark\Inbound(file_get_contents('php://input'));
+
+		$reply = new bbSubscriptions_Reply();
+		$reply->from = $inbound->FromEmail();
+		$reply->subject = $inbound->Subject();
+		$reply->body = $inbound->Text();
+		$reply_id = $reply->insert();
+		if ($reply_id === false) {
+			continue;
+		}
 
 		echo $inbound->Subject();
 		echo $inbound->FromEmail();
