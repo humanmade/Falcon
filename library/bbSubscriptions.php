@@ -123,31 +123,26 @@ class bbSubscriptions extends Sputnik_Library_Plugin {
 
 		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
-		// Loop through users
-		foreach ( (array) $user_ids as $user_id ) {
+		// Don't send notifications to the person who made the post
+		array_filter($user_ids, function ($id) use ($reply_author) {
+			return (empty($reply_author) || (int) $id !== (int) $reply_author);
+		});
 
-			// Don't send notifications to the person who made the post
-			if ( !empty( $reply_author ) && (int) $user_id == (int) $reply_author )
-				continue;
+		// Get userdata for all users
+		array_map(function ($id) {
+			return get_userdata($id);
+		}, $user_ids);
 
-			$text = "%1\$s\n\n";
-			$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-			$text .= "You are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+		// Build email
+		$text = "%1\$s\n\n";
+		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
+		$text .= "You are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+		$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
+		$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
 
-			$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
+		$headers = array();
 
-			// For plugins to filter titles per reply/topic/user
-			$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
-			if ( empty( $subject ) )
-				continue;
-
-			// Get user data of this user
-			$user = get_userdata( $user_id );
-
-			$headers = array();
-
-			self::$handler->send_mail($user, $subject, $text, $headers, compact('topic_id', 'reply_author_name'));
-		}
+		self::$handler->send_mail($user_ids, $subject, $text, $headers, compact('topic_id', 'reply_author_name'));
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 

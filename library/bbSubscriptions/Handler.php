@@ -1,7 +1,7 @@
 <?php
 
 interface bbSubscriptions_Handler {
-	public static function send_mail($user, $subject, $text, $headers, $attrs);
+	public static function send_mail($users, $subject, $text, $headers, $attrs);
 
 	/**
 	 * Check the inbox for replies
