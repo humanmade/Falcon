@@ -48,7 +48,7 @@ class bbSub {
 	public static function autoload($class) {
 		if (strpos($class, 'EmailReplyParser') === 0) {
 			$filename = str_replace(array('_', '\\'), '/', $class);
-			$filename = self::$path . '/library/' . $filename . '.php';
+			$filename = self::$path . '/vendor/EmailReplyParser/src/' . $filename . '.php';
 			if (file_exists($filename)) {
 				require_once($filename);
 			}
