@@ -83,14 +83,14 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 						},
 						success: function (response) {
 							// Replace the title and form with the contents
-							$('#bbsub-handlersettings-title').next().remove().end().remove();
+							$('#bbsub-handlersettings-header').next().remove().end().remove();
 							//$('#bbsub-handlersettings-title').replaceWith(response);
 							$('#bbsub-handlersettings-insert').after(response);
 							$('#bbsub-loading').remove();
 						},
 						error: function (response) {
 							// Replace just the form with the error message
-							$('#bbsub-handlersettings-title').next().replaceWith(response.responseText);
+							$('#bbsub-handlersettings-header').next().replaceWith(response.responseText);
 							$('#bbsub-loading').remove();
 						}
 					});
@@ -330,7 +330,17 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		if ( !isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section]) )
 			return;
 
+		echo '<div id="bbsub-handlersettings-header">';
 		echo '<h3 id="bbsub-handlersettings-title">' . __('Handler Settings', 'bbsub') . '</h3>';
+
+		try {
+			$handler = bbSubscriptions::get_handler_class();
+		}
+		catch (Exception $e) {
+			return;
+		}
+		$handler::options_section_header();
+		echo '</div>';
 	}
 
 	/**

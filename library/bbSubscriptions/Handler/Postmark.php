@@ -130,6 +130,21 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	}
 
 	/**
+	 * Output a description for the options
+	 *
+	 * If you have any extra information you want to tell the user, this is
+	 * probably the best place for it to live.
+	 */
+	public static function options_section_header() {
+?>
+	<p><?php printf(
+		__("Once you've set up your API key here, make sure to set your Inbound Hook URL to <code>%s</code>", 'bbsub'),
+		admin_url('admin-post.php?action=bbsub')
+	) ?></p>
+<?php
+	}
+
+	/**
 	 * Register handler-specific option fields
 	 *
 	 * @see bbSubscriptions_Handler::register_option_fields

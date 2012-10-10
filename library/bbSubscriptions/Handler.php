@@ -34,6 +34,14 @@ interface bbSubscriptions_Handler {
 	public static function get_name();
 
 	/**
+	 * Output a description for the options
+	 *
+	 * If you have any extra information you want to tell the user, this is
+	 * probably the best place for it to live.
+	 */
+	public static function options_section_header();
+
+	/**
 	 * Register handler-specific option fields
 	 *
 	 * This method is expected to call `add_settings_field()` as many times as
