@@ -24,31 +24,50 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	}
 
 	/**
+	 * Get all available handlers
+	 *
+	 * @return array Associative array of identifier => handler class
+	 */
+	public static function get_handlers() {
+		$default = array(
+			'postmark' => 'bbSubscriptions_Handler_Postmark',
+		);
+		return apply_filters('bbsub_handlers', $default);
+	}
+
+	/**
+	 * Get the registered handler class for a certain type
+	 *
+	 * @param string|null $type Type to get, defaults to the option
+	 */
+	public static function get_handler_class($type = null) {
+		if (!$type) {
+			$type = get_option('bbsub_handler_type', false);
+		}
+
+		$handlers = bbSubscriptions::get_handlers();
+
+		if (empty($type)) {
+			throw new Exception('No handler set in the options');
+		}
+		if (!isset($handlers[$type])) {
+			throw new Exception('Handler could not be found.');
+		}
+		return $handlers[$type];
+	}
+
+	/**
 	 * Get a mail handler based on the config
 	 *
 	 * @return bbSubscriptions_Handler
 	 */
 	protected static function get_handler() {
 		$type = get_option('bbsub_handler_type', 'postmark');
-		$handler = null;
+		$options = get_option('bbsub_handler_options', array());
 
-		switch ($type) {
-			case 'postmark':
-				$handler = new bbSubscriptions_Handler_Postmark();
-				break;
-		#	case 'lamson':
-		#		$handler = new bbSubscriptions_Handler_Lamson();
-		#		break;
-		#	case 'imap':
-		#		$handler = new bbSubscriptions_Handler_IMAP();
-		#		break;
-		}
-
-		$handler = apply_filters('bbsub_handler_' . $type, $handler);
-
-		if ($handler === null) {
-			throw new Exception('Handler could not be found.');
-		}
+		// Get the appropriate handler
+		$handler = self::get_handler_class($type);
+		$handler = apply_filters('bbsub_handler_' . $type, new $handler($options), $options);
 
 		return $handler;
 	}
