@@ -2,6 +2,16 @@
 
 class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	/**
+	 * Should we wipe the handler-specific options?
+	 *
+	 * When the handler is changed, we can't keep the same handler-specific
+	 * options saved, so this flag ensures that we wipe the data.
+	 *
+	 * @var boolean
+	 */
+	protected static $wipe_handler_options = false;
+
+	/**
 	 * Bootstrap the class
 	 *
 	 * Ensures all necessary hooks are added
@@ -89,6 +99,9 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	public static function validate_type($input) {
 		if ( in_array( $input, array_keys(bbSubscriptions::get_handlers()) ) ) {
+			if ($input !== get_option('bbsub_handler_type', false)) {
+				self::$wipe_handler_options = true;
+			}
 			return $input;
 		}
 
@@ -119,6 +132,10 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @see self::init()
 	 */
 	public static function validate_handler_options($input) {
+		if (self::$wipe_handler_options) {
+			return array();
+		}
+
 		try {
 			$handler = bbSubscriptions::get_handler_class();
 		}
