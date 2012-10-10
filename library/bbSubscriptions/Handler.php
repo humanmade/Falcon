@@ -32,15 +32,15 @@ interface bbSubscriptions_Handler {
 	 * needed for the relevant option fields. The `$group` and `$section` params
 	 * are the 4th and 5th parameters to `add_settings_field()` respectively.
 	 *
-	 * e.g. `add_settings_fields('bbsub_postmark_apikey', 'Postmark API Key', array(__CLASS__, 'field_apikey'), $group, $section)`
+	 * e.g. `add_settings_field('bbsub_postmark_apikey', 'Postmark API Key', array(__CLASS__, 'field_apikey'), $group, $section)`
 	 *
 	 * Note that you need to use "bbsub_handler_options" as the name of the POST
 	 * variable in your callback.
 	 *
 	 * e.g. `echo '<input type="text" name="bbsub_handler_options[api_key]" />`;
 	 *
-	 * @param string $group Settings group (4th parameter to `add_settings_fields`)
-	 * @param string $section Settings section (5th parameter to `add_settings_fields`)
+	 * @param string $group Settings group (4th parameter to `add_settings_field`)
+	 * @param string $section Settings section (5th parameter to `add_settings_field`)
 	 * @param array $options Current options
 	 */
 	public static function register_option_fields($group, $section, $options);
