@@ -14,9 +14,8 @@ abstract class bbSubscriptions_Autohooker {
 	 * @see Sputnik_Library_Plugin::register_hooks
 	 * @see Sputnik_Library_Plugin_Dynamic::register_hooks
 	 * @param boolean|array $prefixes True for default (`action_`/`filter_`), array with keys "action" & "filter" or false
-	 * @param string|object $parent Object to register from
 	 */
-	public static function register_hooks($prefixes, $parent) {
+	public static function register_hooks($prefixes = false) {
 		$parent = get_called_class();
 		$is_sane = self::check_eaccelerator_saneness();
 		if (!$is_sane) {
