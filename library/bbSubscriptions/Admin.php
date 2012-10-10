@@ -115,7 +115,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 *
 	 * @see self::init()
 	 */
-	public static function register_handler_settings_fields($option_name, $group, $section) {
+	public static function register_handler_settings_fields($group, $section) {
 		$current = get_option('bbsub_handler_options', array());
 		try {
 			$handler = bbSubscriptions::get_handler_class();
