@@ -212,7 +212,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 
 		echo '<input type="text" name="bbsub_replyto" class="regular-text" value="' . esc_attr($current) . '" />';
 		echo '<p class="description">';
-		_e('This is in the form <code>reply+%1$s-%2$s@example.com</code> where <code>%1$s</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'bbsub');
+		_e('This is in the form <code>reply+%1$d-%2$s@example.com</code> where <code>%1$d</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'bbsub');
 		echo '</p>';
 	}
 
@@ -227,11 +227,11 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		$oldvalue = get_option('bbsub_replyto', '');
 
 		// Check that our tokens are in the string
-		if (strpos($input, '%1$s') === false || strpos($input, '%2$s') === false) {
+		if (strpos($input, '%1$d') === false || strpos($input, '%2$s') === false) {
 			add_settings_error(
 				'bbsub_replyto',
 				'bbsub_replyto_notokens',
-				__('The <code>%1$s</code> and <code>%2$s</code> tokens must be in the reply-to address', 'bbsub')
+				__('The <code>%1$d</code> and <code>%2$s</code> tokens must be in the reply-to address', 'bbsub')
 			);
 			return $oldvalue;
 		}
