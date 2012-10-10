@@ -35,12 +35,14 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		register_setting( 'bbsub_options', 'bbsub_handler_type', array(__CLASS__, 'validate_type') );
 		register_setting( 'bbsub_options', 'bbsub_replyto', array(__CLASS__, 'validate_replyto') );
 		register_setting( 'bbsub_options', 'bbsub_from_email', array(__CLASS__, 'validate_from_email') );
+		register_setting( 'bbsub_options', 'bbsub_send_to_author', array(__CLASS__, 'validate_send_to_author') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
 
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
+		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
@@ -251,6 +253,29 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		}
 
 		return $input;
+	}
+
+	/**
+	 * Print field for the Send to Author checkbox
+	 *
+	 * @see self::init()
+	 */
+	public static function settings_field_send_to_author() {
+		$current = get_option('bbsub_send_to_author', '');
+
+		echo '<label><input type="checkbox" name="bbsub_send_to_author" ' . checked($current, true, false) . ' /> ';
+		_e('Send a notification to the reply author', 'bbsub');
+		echo '</label>';
+	}
+
+	/**
+	 * Validate the Send to Author checkbox
+	 *
+	 * @param string $input
+	 * @return string
+	 */
+	public static function validate_send_to_author($input) {
+		return (bool) $input;
 	}
 
 	/**

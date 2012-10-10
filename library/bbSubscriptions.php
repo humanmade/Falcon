@@ -181,9 +181,13 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
 		// Don't send notifications to the person who made the post
-		$user_ids = array_filter($user_ids, function ($id) use ($reply_author) {
-			return (empty($reply_author) || (int) $id !== (int) $reply_author);
-		});
+		$send_to_author = get_option('bbsub_send_to_author', false);
+
+		if (!$send_to_author) {
+			$user_ids = array_filter($user_ids, function ($id) use ($reply_author) {
+				return (empty($reply_author) || (int) $id !== (int) $reply_author);
+			});
+		}
 
 		// Get userdata for all users
 		$user_ids = array_map(function ($id) {
