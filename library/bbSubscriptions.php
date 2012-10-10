@@ -193,7 +193,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		// Build email
 		$text = "%1\$s\n\n";
 		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are recieving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
 		$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
 		$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
 
