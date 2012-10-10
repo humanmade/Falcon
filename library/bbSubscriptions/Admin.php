@@ -33,10 +33,12 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		}
 
 		register_setting( 'bbsub_options', 'bbsub_handler_type', array(__CLASS__, 'validate_type') );
+		register_setting( 'bbsub_options', 'bbsub_replyto', array(__CLASS__, 'validate_replyto') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
 
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
+		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
@@ -196,6 +198,57 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			__('The selected handler is invalid', 'bbsub')
 		);
 		return false;
+	}
+
+	/**
+	 * Print field for the reply-to address
+	 *
+	 * @see self::init()
+	 */
+	public static function settings_field_replyto() {
+		$current = get_option('bbsub_replyto', '');
+
+		echo '<input type="text" name="bbsub_replyto" class="regular-text" value="' . esc_attr($current) . '" />';
+		echo '<p class="description">';
+		_e('This is in the form <code>reply+%1$s-%2$s@example.com</code> where <code>%1$s</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'bbsub');
+		echo '</p>';
+	}
+
+	/**
+	 * Validate the reply-to address
+	 *
+	 * Ensures that the reply-to address is a valid formattable email address
+	 * @param string $input New reply-to address
+	 * @return string Updated reply-to address if valid, otherwise the old address
+	 */
+	public static function validate_replyto($input) {
+		$oldvalue = get_option('bbsub_replyto', '');
+
+		// Check that our tokens are in the string
+		if (strpos($input, '%1$s') === false || strpos($input, '%2$s') === false) {
+			add_settings_error(
+				'bbsub_replyto',
+				'bbsub_replyto_notokens',
+				__('The <code>%1$s</code> and <code>%2$s</code> tokens must be in the reply-to address', 'bbsub')
+			);
+			return $oldvalue;
+		}
+
+		// Test it out!
+		$hmac = hash_hmac('sha1', '5|1', 'bbsub_reply_by_email');
+		$formatted = sprintf($input, 5, $hmac);
+
+		// Check that the resulting email is valid
+		if (!is_email($formatted)) {
+			add_settings_error(
+				'bbsub_replyto',
+				'bbsub_replyto_invalid',
+				__('The reply-to address must be a valid address', 'bbsub')
+			);
+			return $oldvalue;
+		}
+
+		return $input;
 	}
 
 	public static function settings_section_handler() {

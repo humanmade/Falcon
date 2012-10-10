@@ -84,7 +84,12 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 * @return string Full email address
 	 */
 	public static function get_reply_address($topic, $user) {
-		return sprintf('me+bbsub-%s-%s@ryanmccue.info', $topic, self::get_hash($topic, $user->ID));
+		$address = get_option('bbsub_replyto', false);
+		if (empty($address)) {
+			throw new Exception('Invalid reply-to address');
+		}
+
+		return sprintf($address, $topic, self::get_hash($topic, $user));
 	}
 
 	/**
