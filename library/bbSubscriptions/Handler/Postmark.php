@@ -118,8 +118,9 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	 * @see bbSubscriptions_Handler::register_option_fields
 	 * @param string $group Settings group (4th parameter to `add_settings_fields`)
 	 * @param string $section Settings section (5th parameter to `add_settings_fields`)
+	 * @param array $options Current options
 	 */
-	public static function register_option_fields($group, $section) {
+	public static function register_option_fields($group, $section, $options) {
 
 	}
 
