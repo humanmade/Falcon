@@ -16,8 +16,11 @@ require_once bbSub::$path . '/vendor/postmark-inbound/lib/Postmark/Autoloader.ph
  * @subpackage Handlers
  */
 class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
-	public function __construct() {
-		$this->api_key = '';
+	public function __construct($options) {
+		if (empty($options) || empty($options['api_key'])) {
+			throw new Exception('Postmark API key not set');
+		}
+		$this->api_key = $options['api_key'];
 	}
 
 	public function send_mail($users, $subject, $content, $attrs) {
@@ -107,5 +110,27 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 			echo 'Reply could not be added?';
 			// Log this?
 		}
+	}
+
+	/**
+	 * Register handler-specific option fields
+	 *
+	 * @see bbSubscriptions_Handler::register_option_fields
+	 * @param string $group Settings group (4th parameter to `add_settings_fields`)
+	 * @param string $section Settings section (5th parameter to `add_settings_fields`)
+	 */
+	public static function register_option_fields($group, $section) {
+
+	}
+
+	/**
+	 * Validate the options from the submitted form
+	 *
+	 * @see bbSubscriptions_Handler::validate_options
+	 * @param array $input Raw POSTed data
+	 * @return array Sanitized POST data
+	 */
+	public static function validate_options($input) {
+		return array();
 	}
 }
