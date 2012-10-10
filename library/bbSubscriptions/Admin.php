@@ -11,6 +11,8 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	protected static $wipe_handler_options = false;
 
+	protected static $registered_handler_settings = false;
+
 	/**
 	 * Bootstrap the class
 	 *
@@ -62,7 +64,86 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 				<?php submit_button() ?>
 			</form>
 		</div>
+
+		<script type="text/javascript">
+			jQuery(document).ready(function ($) {
+				$('#bbsub_options_global_type').on('change', function (e) {
+					$('#bbsub_options_global_type').after(' <img src="<?php echo esc_js( esc_url( admin_url( 'images/loading.gif' ) ) ); ?>" id="bbsub-loading" />' );
+					$.ajax({
+						url: ajaxurl,
+						data: {
+							action: 'bbsub_handler_section',
+							handler: $(this).val()
+						},
+						success: function (response) {
+							// Replace the title and form with the contents
+							$('#bbsub-handlersettings-title').next().remove().end().remove();
+							//$('#bbsub-handlersettings-title').replaceWith(response);
+							$('#bbsub-handlersettings-insert').after(response);
+							$('#bbsub-loading').remove();
+						},
+						error: function (response) {
+							// Replace just the form with the error message
+							$('#bbsub-handlersettings-title').next().replaceWith(response.responseText);
+							$('#bbsub-loading').remove();
+						}
+					});
+				});
+			})
+		</script>
 <?php
+	}
+
+	/**
+	 * Handle an AJAX request for the handler section
+	 *
+	 * @wp-action wp_ajax_bbsub_handler_section
+	 */
+	public static function ajax_handler_section() {
+		try {
+			if (!isset($_REQUEST['handler'])) {
+				throw new Exception('Invalid handler type');
+			}
+
+			// Setup the handler settings for the newly selected handler
+			$handler = self::validate_type($_REQUEST['handler']);
+			if (!$handler) {
+				throw new Exception('Invalid handler');
+			}
+
+			$options = get_option('bbsub_handler_options', array());
+			// validate_type() will set this flag if the type isn't equal to
+			// the current one
+			if (self::$wipe_handler_options) {
+				$options = array();
+			}
+			self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions', $handler, $options);
+			self::$registered_handler_settings = true;
+
+			// Now, output the section
+			$page = 'bbsub_options';
+			$section = 'bbsub_options_handleroptions';
+
+
+			global $wp_settings_fields;
+			self::settings_section_handler();
+
+			if ( !isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section]) )
+				die();
+
+			echo '<table class="form-table">';
+			do_settings_fields($page, $section);
+			echo '</table>';
+
+			// Special field to ensure we don't wipe settings fully
+			echo '<input type="hidden" name="bbsub_used_ajax" value="1" />';
+		}
+		catch (Exception $e) {
+			header('X-Excepted: true', true, 500);
+			echo '<div class="error" style="width:317px" id="bbsub-handlersettings-error"><p>' . $e->getMessage() . '</p></div>';
+		}
+
+		die();
 	}
 
 	/**
@@ -103,7 +184,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	public static function validate_type($input) {
 		if ( in_array( $input, array_keys(bbSubscriptions::get_handlers()) ) ) {
-			if ($input !== get_option('bbsub_handler_type', false)) {
+			if ($input !== get_option('bbsub_handler_type', false) && empty($_POST['bbsub_used_ajax'])) {
 				self::$wipe_handler_options = true;
 			}
 			return $input;
@@ -113,18 +194,23 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	}
 
 	public static function settings_section_handler() {
-		self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions');
+		if (!self::$registered_handler_settings) {
+			self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions');
+			self::$registered_handler_settings = true;
+		}
+
+		echo '<div id="bbsub-handlersettings-insert"></div>';
 
 		global $wp_settings_fields;
 
-		// If the handler didn't register any options, don't bother to echo the
-		// title
+		// If the handler didn't register any options, don't bother to print the
+		// title for the section
 		$page = 'bbsub_options';
 		$section = 'bbsub_options_handleroptions';
 		if ( !isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section]) )
 			return;
 
-		echo '<h3>' . __('Handler Settings', 'bbsub') . '</h3>';
+		echo '<h3 id="bbsub-handlersettings-title">' . __('Handler Settings', 'bbsub') . '</h3>';
 	}
 
 	/**
@@ -132,10 +218,12 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 *
 	 * @see self::init()
 	 */
-	public static function register_handler_settings_fields($group, $section) {
-		$current = get_option('bbsub_handler_options', array());
+	public static function register_handler_settings_fields($group, $section, $handler_type = null, $current = null) {
+		if ($current === null) {
+			$current = get_option('bbsub_handler_options', array());
+		}
 		try {
-			$handler = bbSubscriptions::get_handler_class();
+			$handler = bbSubscriptions::get_handler_class($handler_type);
 		}
 		catch (Exception $e) {
 			return false;
