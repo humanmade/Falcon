@@ -38,7 +38,6 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
-		self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions');
 	}
 
 	/**
@@ -114,6 +113,8 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	}
 
 	public static function settings_section_handler() {
+		self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions');
+
 		global $wp_settings_fields;
 
 		// If the handler didn't register any options, don't bother to echo the
