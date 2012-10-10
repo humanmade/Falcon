@@ -1,6 +1,6 @@
 <?php
 
-class bbSubscriptions extends Sputnik_Library_Plugin {
+class bbSubscriptions extends bbSubscriptions_Autohooker {
 	protected static $handler = null;
 
 	public static function bootstrap() {

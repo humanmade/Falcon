@@ -69,5 +69,6 @@ class bbSub {
 register_activation_hook(__FILE__, array('bbSub', 'activation'));
 register_deactivation_hook(__FILE__, array('bbSub', 'deactivation'));
 
-add_action('sputnik_loaded', array('bbSub', 'verify'));
+//add_action('sputnik_loaded', array('bbSub', 'verify'));
+add_action('plugins_loaded', array('bbSub', 'verify'));
 add_action('all_admin_notices', array('bbSub', 'report_error'));
