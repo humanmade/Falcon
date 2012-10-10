@@ -7,6 +7,10 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		// Kill the defaults
 		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
 
+		if (is_admin()) {
+			bbSubscriptions_Admin::bootstrap();
+		}
+
 		try {
 			// Check for a handler first
 			self::$handler = self::get_handler();
