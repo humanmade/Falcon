@@ -190,6 +190,11 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			return $input;
 		}
 
+		add_settings_error(
+			'bbsub_handler_type',
+			'bbsub_handler_invalid',
+			__('The selected handler is invalid', 'bbsub')
+		);
 		return false;
 	}
 
