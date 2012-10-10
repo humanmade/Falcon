@@ -66,17 +66,15 @@ class bbSubscriptions_Reply {
 	}
 
 	public static function parse_to($address) {
-		preg_match('#(?P<user>[^\+@]+)(?:\+(?P<plus>[^@]+))?@(?P<domain>.+)#i', $address, $matches);
+		$template = get_option('bbsub_replyto');
 
-		if (empty($matches['plus'])) {
-			throw new Exception('Plus part empty');
-		}
+		// Hack to make ungreedy
+		$template = str_replace('%2$s', '%2$[a-zA-Z0-9]', $template);
+		$result = sscanf($address, $template);
 
-		// 'plus' => sprintf( '%s-%s', $topic, $user_nonce )
-		$plus = explode('-', $matches['plus']);
-		if (count($plus) < 2) {
-			throw new Exception('Plus part not formatted correctly');
+		if (empty($result) || empty($result[0]) || empty($result[1])) {
+			throw new Exception('Reply-to not formatted correctly');
 		}
-		return $plus;
+		return $result;
 	}
 }
