@@ -113,6 +113,16 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	}
 
 	/**
+	 * Get a human-readable name for the handler
+	 *
+	 * This is used for the handler selector and is shown to the user.
+	 * @return string
+	 */
+	public static function get_name() {
+		return 'Postmark';
+	}
+
+	/**
 	 * Register handler-specific option fields
 	 *
 	 * @see bbSubscriptions_Handler::register_option_fields

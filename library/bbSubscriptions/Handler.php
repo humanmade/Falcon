@@ -26,6 +26,14 @@ interface bbSubscriptions_Handler {
 	public function handle_post();
 
 	/**
+	 * Get a human-readable name for the handler
+	 *
+	 * This is used for the handler selector and is shown to the user.
+	 * @return string
+	 */
+	public static function get_name();
+
+	/**
 	 * Register handler-specific option fields
 	 *
 	 * This method is expected to call `add_settings_field()` as many times as

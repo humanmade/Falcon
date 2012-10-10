@@ -84,9 +84,13 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		$current = get_option('bbsub_handler_type', false);
 		$available = bbSubscriptions::get_handlers();
 
-		echo '<select name="bbsub_handler_type">';
+		if (empty($available)) {
+			echo '<p class="error">No handlers are available!</p>';
+		}
+
+		echo '<select name="bbsub_handler_type" id="bbsub_options_global_type">';
 		foreach ($available as $type => $class) {
-			echo '<option value="' . esc_attr($type) . '"' . selected($current, $type) . '>' . $type . '</option>';
+			echo '<option value="' . esc_attr($type) . '"' . selected($current, $type) . '>' . esc_html($class::get_name()) . '</option>';
 		}
 		echo '</select>';
 	}
