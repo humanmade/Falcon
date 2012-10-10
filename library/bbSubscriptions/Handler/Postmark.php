@@ -16,6 +16,13 @@ require_once bbSub::$path . '/vendor/postmark-inbound/lib/Postmark/Autoloader.ph
  * @subpackage Handlers
  */
 class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
+	/**
+	 * For the settings callbacks, we need to hold on to the current options
+	 *
+	 * @var array
+	 */
+	protected static $current_options = array();
+
 	public function __construct($options) {
 		if (empty($options) || empty($options['api_key'])) {
 			throw new Exception('Postmark API key not set');
@@ -131,7 +138,23 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	 * @param array $options Current options
 	 */
 	public static function register_option_fields($group, $section, $options) {
+		self::$current_options = $options;
+		add_settings_field('bbsub_postmark_apikey', 'Postmark API Key', array(__CLASS__, 'field_apikey'), $group, $section);
+	}
 
+	public static function field_apikey() {
+		$key = '';
+		if (isset(self::$current_options['api_key'])) {
+			$key = self::$current_options['api_key'];
+		}
+?>
+		<input type="text" name="bbsub_handler_options[api_key]"
+			id="bbsub_postmark_apikey" value="<?php echo esc_attr($key) ?>"
+			class="regular-text code" />
+		<p class="description">
+			<?php _e("You'll need to create an API key on the Postmark site. Head to <a href='https://postmarkapp.com/servers'>your server</a>, then generate an API key under the credentials tab", 'bbsub') ?>
+		</p>
+<?php
 	}
 
 	/**
@@ -142,6 +165,8 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	 * @return array Sanitized POST data
 	 */
 	public static function validate_options($input) {
-		return array();
+		$sanitized = array();
+		$sanitized['api_key'] = trim($input['api_key']);
+		return $sanitized;
 	}
 }
