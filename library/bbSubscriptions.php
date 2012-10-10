@@ -77,7 +77,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	}
 
 	/**
-	 * Get the reply-to/from address for a topic and user
+	 * Get the reply-to address for a topic and user
 	 *
 	 * @param int $topic Topic ID
 	 * @param WP_User $user User object
@@ -105,6 +105,28 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 */
 	public static function get_hash($topic, $user) {
 		return hash_hmac('sha1', $topic . '|' . $user->ID, 'bbsub_reply_by_email');
+	}
+
+	/**
+	 * Get the From address
+	 *
+	 * Defaults to the same default email as wp_mail(), including filters
+	 * @return string Full email address
+	 */
+	public static function get_from_address() {
+		$address = get_option('bbsub_from_email', false);
+		if (empty($address)) {
+			// Get the site domain and get rid of www.
+			$sitename = strtolower( $_SERVER['SERVER_NAME'] );
+			if ( substr( $sitename, 0, 4 ) == 'www.' ) {
+				$sitename = substr( $sitename, 4 );
+			}
+
+			$address = 'wordpress@' . $sitename;
+			$address = apply_filters('wp_mail_from', $address);
+		}
+
+		return $address;
 	}
 
 	/**

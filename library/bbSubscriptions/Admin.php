@@ -34,11 +34,13 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 
 		register_setting( 'bbsub_options', 'bbsub_handler_type', array(__CLASS__, 'validate_type') );
 		register_setting( 'bbsub_options', 'bbsub_replyto', array(__CLASS__, 'validate_replyto') );
+		register_setting( 'bbsub_options', 'bbsub_from_email', array(__CLASS__, 'validate_from_email') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
 
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
+		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
@@ -244,6 +246,41 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 				'bbsub_replyto',
 				'bbsub_replyto_invalid',
 				__('The reply-to address must be a valid address', 'bbsub')
+			);
+			return $oldvalue;
+		}
+
+		return $input;
+	}
+
+	/**
+	 * Print field for the reply-to address
+	 *
+	 * @see self::init()
+	 */
+	public static function settings_field_from() {
+		$current = get_option('bbsub_from_email', '');
+
+		echo '<input type="email" name="bbsub_from_email" class="regular-text" value="' . esc_attr($current) . '" />';
+		echo '<p class="description">' . __('Leave blank to use the default email address (<code>wordpress@</code>)', 'bbsub') . '</p>';
+	}
+
+	/**
+	 * Validate the reply-to address
+	 *
+	 * Ensures that the reply-to address is a valid formattable email address
+	 * @param string $input New reply-to address
+	 * @return string Updated reply-to address if valid, otherwise the old address
+	 */
+	public static function validate_from_email($input) {
+		$oldvalue = get_option('bbsub_from_email', '');
+
+		// Check that the resulting email is valid
+		if (!is_email($input)) {
+			add_settings_error(
+				'bbsub_from_email',
+				'bbsub_from_invalid',
+				__('The from address must be a valid address', 'bbsub')
 			);
 			return $oldvalue;
 		}
