@@ -36,7 +36,8 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
 
-		add_settings_section('bbsub_options_handleroptions', 'Handler Settings', array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
+		// Note: title is false so that we can handle it ourselves
+		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
 		self::register_handler_settings_fields('bbsub_options', 'bbsub_options_handleroptions');
 	}
 
@@ -61,7 +62,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 				<?php do_settings_sections('bbsub_options') ?>
 				<?php submit_button() ?>
 			</form>
-		</div?
+		</div>
 <?php
 	}
 
@@ -108,7 +109,18 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		return false;
 	}
 
-	public static function settings_section_handler() {}
+	public static function settings_section_handler() {
+		global $wp_settings_fields;
+
+		// If the handler didn't register any options, don't bother to echo the
+		// title
+		$page = 'bbsub_options';
+		$section = 'bbsub_options_handleroptions';
+		if ( !isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section]) )
+			return;
+
+		echo '<h3>' . __('Handler Settings', 'bbsub') . '</h3>';
+	}
 
 	/**
 	 * Notify the handler to register handler-specific options
