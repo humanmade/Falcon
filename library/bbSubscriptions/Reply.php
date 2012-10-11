@@ -62,7 +62,11 @@ class bbSubscriptions_Reply {
 			'topic_id' => $this->topic
 		);
 
-		return bbp_insert_reply($reply, $meta);
+		$reply_id = bbp_insert_reply($reply, $meta);
+
+		do_action( 'bbp_new_reply', $reply_id, $meta['topic_id'], $meta['forum_id'], false, $reply['post_author'] );
+
+		return $reply_id;
 	}
 
 	public static function parse_to($address) {
