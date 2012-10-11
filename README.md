@@ -1,6 +1,6 @@
 # bbPress Reply by Email
 
-Now your forum's participants can reply to topics via email (thanks to the [Postmark](http://postmarkapp.com) inbound mail server).
+Now your forum's participants can reply to topics via email using the [Postmark Inbound](http://postmarkapp.com/inbound).
 
 ## Cloning the Repository
 This repository uses submodules. When using submodules, `git clone` and `git pull` will not gather all the files and resources of the repository.
