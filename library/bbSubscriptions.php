@@ -199,7 +199,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
 		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
 		$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
-		$subject = 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id );
+		$subject = apply_filters('bbsub_email_subject','Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ));
 
 		self::$handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
 
