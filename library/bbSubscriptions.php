@@ -176,7 +176,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		}
 
 		// Poster name
-		$reply_author_name = sprintf( '%s %s | %s', get_bloginfo( 'name' ), __('Forums','bbsub'), bbp_get_reply_author_display_name($reply_id));
+		$reply_author_name = apply_filters('bbsub_reply_author_name',bbp_get_reply_author_display_name($reply_id));
 
 		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
