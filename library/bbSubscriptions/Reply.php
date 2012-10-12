@@ -66,6 +66,9 @@ class bbSubscriptions_Reply {
 
 		do_action( 'bbp_new_reply', $reply_id, $meta['topic_id'], $meta['forum_id'], false, $reply['post_author'] );
 
+		// bbPress removes the user's subscription because bbp_update_reply() is hooked to 'bbp_new_reply' and it checks for $_POST['bbp_topic_subscription']
+		bbp_add_user_subscription( $reply['post_author'], $meta['topic_id'] );
+
 		return $reply_id;
 	}
 
