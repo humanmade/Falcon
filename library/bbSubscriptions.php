@@ -6,6 +6,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	public static function bootstrap() {
 		// Kill the defaults
 		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
+		add_filter('bbsub_html_to_text', array(__CLASS__, 'convert_html_to_text'));
 
 		if (is_admin()) {
 			bbSubscriptions_Admin::bootstrap();
@@ -194,11 +195,14 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 			return get_userdata($id);
 		}, $user_ids);
 
+		// Sanitize the HTML into text
+		$content = apply_filters('bbsub_html_to_text', bbp_get_reply_content($reply_id));
+
 		// Build email
 		$text = "%1\$s\n\n";
 		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
 		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf($text, strip_tags(bbp_get_reply_content($reply_id)), bbp_get_reply_url($reply_id));
+		$text = sprintf($text, $content, bbp_get_reply_url($reply_id));
 		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ));
 
 		self::$handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
@@ -229,5 +233,16 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		}
 
 		self::$handler->handle_post();
+	}
+
+	/**
+	 * Convert the post content to text
+	 *
+	 * @param string $html HTML to convert
+	 * @return string Text version of the content
+	 */
+	public static function convert_html_to_text($html) {
+		$converter = new bbSubscriptions_Converter($html);
+		return $converter->get_text();
 	}
 }
