@@ -175,6 +175,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		}
 
 		echo '<select name="bbsub_handler_type" id="bbsub_options_global_type">';
+		echo '<option>None</option>';
 		foreach ($available as $type => $class) {
 			echo '<option value="' . esc_attr($type) . '"' . selected($current, $type) . '>' . esc_html($class::get_name()) . '</option>';
 		}
