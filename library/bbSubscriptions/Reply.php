@@ -16,6 +16,7 @@ class bbSubscriptions_Reply {
 		$user = get_user_by_email($this->from);
 
 		if ($this->nonce !== bbSubscriptions::get_hash($this->topic, $user)) {
+			bbSubscriptions::notify_invalid($user, $this->topic);
 			return false;
 		}
 
