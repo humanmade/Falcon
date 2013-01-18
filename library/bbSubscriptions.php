@@ -6,7 +6,6 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	public static function bootstrap() {
 		// Kill the defaults
 		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
-		add_filter('bbsub_html_to_text', array(__CLASS__, 'convert_html_to_text'));
 
 		if (is_admin()) {
 			bbSubscriptions_Admin::bootstrap();
@@ -238,6 +237,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	/**
 	 * Convert the post content to text
 	 *
+	 * @wp-filter bbsub_html_to_text
 	 * @param string $html HTML to convert
 	 * @return string Text version of the content
 	 */
