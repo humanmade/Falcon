@@ -267,6 +267,6 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 */
 	public static function convert_html_to_text($html) {
 		$converter = new bbSubscriptions_Converter($html);
-		return $converter->get_text();
+		return $converter->convert();
 	}
 }
