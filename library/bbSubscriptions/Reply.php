@@ -81,7 +81,7 @@ class bbSubscriptions_Reply {
 		$result = sscanf($address, $template);
 
 		if (empty($result) || empty($result[0]) || empty($result[1])) {
-			throw new Exception('Reply-to not formatted correctly');
+			throw new Exception(__('Reply-to not formatted correctly', 'bbsub'));
 		}
 		return $result;
 	}

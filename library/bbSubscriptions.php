@@ -20,7 +20,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		}
 		catch (Exception $e) {
 			add_action('all_admin_notices', function () use ($e) {
-				printf('<div class="error"><p>Problem setting up bbSubscriptions! %s</p></div>', $e->getMessage());
+				printf('<div class="error"><p>' . __('Problem setting up bbSubscriptions! %s', 'bbsub') . '</p></div>', $e->getMessage());
 			});
 
 			return false;
@@ -52,10 +52,10 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		$handlers = bbSubscriptions::get_handlers();
 
 		if (empty($type)) {
-			throw new Exception('No handler set in the options');
+			throw new Exception(__('No handler set in the options', 'bbsub'));
 		}
 		if (!isset($handlers[$type])) {
-			throw new Exception('Handler could not be found.');
+			throw new Exception(__('Handler could not be found.', 'bbsub'));
 		}
 		return $handlers[$type];
 	}
@@ -86,7 +86,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	public static function get_reply_address($topic, $user) {
 		$address = get_option('bbsub_replyto', false);
 		if (empty($address)) {
-			throw new Exception('Invalid reply-to address');
+			throw new Exception(__('Invalid reply-to address', 'bbsub'));
 		}
 
 		return sprintf($address, $topic, self::get_hash($topic, $user));

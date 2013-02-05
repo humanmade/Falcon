@@ -25,7 +25,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 
 	public function __construct($options) {
 		if (empty($options) || empty($options['api_key'])) {
-			throw new Exception('Postmark API key not set');
+			throw new Exception(__('Postmark API key not set', 'bbsub'));
 		}
 		$this->api_key = $options['api_key'];
 	}
@@ -63,13 +63,13 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 			case 200:
 				return true;
 			case 401:
-				throw new Exception('Invalid API key', 401);
+				throw new Exception(__('Invalid API key', 'bbsub'), 401);
 			case 422:
-				throw new Exception('Error with sent body: ' . wp_remote_retrieve_body($response), 422);
+				throw new Exception(sprintf(__('Error with sent body: %s', 'bbsub'), wp_remote_retrieve_body($response)), 422);
 			case 500:
-				throw new Exception('Postmark server error', 500);
+				throw new Exception(__('Postmark server error', 'bbsub'), 500);
 			default:
-				throw new Exception('Unknown error', $code);
+				throw new Exception(__('Unknown error', 'bbsub'), $code);
 		}
 	}
 
@@ -84,7 +84,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 		$input = file_get_contents('php://input');
 		if (empty($input)) {
 			header('X-Fail: No input', true, 400);
-			echo 'No input found.';
+			echo 'No input found.'; // intentionally not translated
 			return;
 		}
 		file_put_contents('/tmp/postmark', $input);
@@ -99,7 +99,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 
 		// The "Test" button sends an email from support@postmarkapp.com
 		if ($inbound->FromEmail() === 'support@postmarkapp.com') {
-			echo 'Hello tester!';
+			echo 'Hello tester!'; // intentionally not translated
 			return;
 		}
 
@@ -114,7 +114,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 		$reply_id = $reply->insert();
 		if ($reply_id === false) {
 			header('X-Fail: No reply ID', true, 400);
-			echo 'Reply could not be added?';
+			echo 'Reply could not be added?'; // intentionally not translated
 			// Log this?
 		}
 	}
@@ -154,7 +154,7 @@ class bbSubscriptions_Handler_Postmark implements bbSubscriptions_Handler {
 	 */
 	public static function register_option_fields($group, $section, $options) {
 		self::$current_options = $options;
-		add_settings_field('bbsub_postmark_apikey', 'Postmark API Key', array(__CLASS__, 'field_apikey'), $group, $section);
+		add_settings_field('bbsub_postmark_apikey', __('Postmark API Key', 'bbsub'), array(__CLASS__, 'field_apikey'), $group, $section);
 	}
 
 	public static function field_apikey() {

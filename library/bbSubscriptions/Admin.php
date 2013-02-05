@@ -54,7 +54,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @wp-action admin_menu
 	 */
 	public static function register_menu() {
-		add_options_page('Reply by Email', 'Reply by Email', 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
+		add_options_page(_x('Reply by Email', 'page title', 'bbsub'), _x('Reply by Email', 'menu title', 'bbsub'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
 	}
 
 	/**
@@ -63,7 +63,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	public static function admin_page() {
 ?>
 		<div class="wrap">
-			<h2>bbPress Reply by Email Options</h2>
+			<h2><?php _e('bbPress Reply by Email Options', 'bbsub') ?></h2>
 			<form method="post" action="options.php">
 				<?php settings_fields('bbsub_options') ?>
 				<?php do_settings_sections('bbsub_options') ?>
@@ -108,13 +108,13 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	public static function ajax_handler_section() {
 		try {
 			if (!isset($_REQUEST['handler'])) {
-				throw new Exception('Invalid handler type');
+				throw new Exception(__('Invalid handler type', 'bbsub'));
 			}
 
 			// Setup the handler settings for the newly selected handler
 			$handler = self::validate_type($_REQUEST['handler']);
 			if (!$handler) {
-				throw new Exception('Invalid handler');
+				throw new Exception(__('Invalid handler', 'bbsub'));
 			}
 
 			$options = get_option('bbsub_handler_options', array());
@@ -158,7 +158,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_section_main() {
-		echo '<p>Main settings for the plugin</p>';
+		echo '<p>' . __('Main settings for the plugin', 'bbsub') . '</p>';
 	}
 
 	/**
@@ -171,11 +171,11 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		$available = bbSubscriptions::get_handlers();
 
 		if (empty($available)) {
-			echo '<p class="error">No handlers are available!</p>';
+			echo '<p class="error">' . __('No handlers are available!', 'bbsub') . '</p>';
 		}
 
 		echo '<select name="bbsub_handler_type" id="bbsub_options_global_type">';
-		echo '<option>None</option>';
+		echo '<option>' . _x('None', 'handler', 'bbsub') . '</option>';
 		foreach ($available as $type => $class) {
 			echo '<option value="' . esc_attr($type) . '"' . selected($current, $type) . '>' . esc_html($class::get_name()) . '</option>';
 		}
