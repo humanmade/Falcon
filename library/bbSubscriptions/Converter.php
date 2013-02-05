@@ -97,7 +97,7 @@ class bbSubscriptions_Converter {
 	 * @return string Processed HTML document
 	 */
 	protected function preprocess($html) {
-		$content_type = 'application/html';
+		$content_type = 'text/html';
 
 		$ret = '<!DOCTYPE html>';
 		$ret .= '<html><head>';
