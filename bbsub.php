@@ -7,7 +7,7 @@
 /*
 Plugin Name: bbPress Subscriptions
 Description: Custom subscriptions for bbPress
-Version: 0.3-dev
+Version: 0.4-dev
 Author: Ryan McCue
 Author URI: http://ryanmccue.info/
 */
