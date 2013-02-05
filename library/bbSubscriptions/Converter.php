@@ -249,6 +249,7 @@ class bbSubscriptions_Converter {
 				return '^' . $this->parse_children($element);
 			case 'del':
 			case 'strike':
+			case 's':
 				return '~~' . $this->parse_children($element) . '~~';
 
 			// Ignored inline tags
