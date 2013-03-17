@@ -68,8 +68,12 @@ class bbSubscriptions_Converter {
 			return $this->text;
 
 		$html = $this->preprocess($this->html);
+
 		$this->document = new DOMDocument();
+
+		set_error_handler(array(__CLASS__, 'silence_errors'));
 		$this->document->loadHTML($html);
+		restore_error_handler();
 
 
 		// Remove the DOCTYPE
@@ -454,5 +458,15 @@ class bbSubscriptions_Converter {
 			$text .= '[' . $num . ']: ' . $url . "\n";
 		}
 		return $text;
+	}
+
+	/**
+	 * No-op error handler for libxml
+	 *
+	 * @param int $num Error type
+	 * @param string $str Error message
+	 */
+	protected static function silence_errors($num, $str) {
+		// No-op error handler
 	}
 }
