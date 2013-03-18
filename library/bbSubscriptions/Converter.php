@@ -466,7 +466,7 @@ class bbSubscriptions_Converter {
 	 * @param int $num Error type
 	 * @param string $str Error message
 	 */
-	protected static function silence_errors($num, $str) {
+	public static function silence_errors($num, $str) {
 		// No-op error handler
 	}
 }
