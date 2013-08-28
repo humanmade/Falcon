@@ -35,6 +35,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	public static function get_handlers() {
 		$default = array(
 			'postmark' => 'bbSubscriptions_Handler_Postmark',
+			'mandrill' => 'bbSubscriptions_Handler_Mandrill',
 		);
 		return apply_filters('bbsub_handlers', $default);
 	}
