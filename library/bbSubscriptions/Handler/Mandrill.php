@@ -1,7 +1,7 @@
 <?php
 /**
  * Mandrill Subscription Handler
- * 
+ *
  * @author Tareq Hasan <tareq@wedevs.com>
  * @package bbSubscriptions
  * @subpackage Handlers
@@ -9,25 +9,25 @@
 
 /**
  * Mandrill Subscription Handler
- * 
+ *
  * @author Tareq Hasan <tareq@wedevs.com>
  * @package bbSubscriptions
  * @subpackage Handlers
  */
 class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 	public function __construct( $options ) {}
-	
+
 	public function check_inbox() {}
-	
+
 	public static function options_section_header() {
-?>
+	?>
 	<p><?php printf(
 		__("Once you've set your Reply-To address, set your Route in your <a href='%s'>Mandrill inbound dashboard</a>", 'bbsub'),
 		'https://mandrillapp.com/inbound'
 	) ?></p>
 
 	<p><?php _e('For example, if <code>reply+%1$d-%2$s@yourdomain.com</code> is your reply-to, your Mandrill route would be <code>reply+*@yourdomain.com</code>', 'bbsub') ?></p>
-<?php
+	<?php
 	}
 
 	public static function register_option_fields( $group, $section, $options ) {}
@@ -49,7 +49,7 @@ class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 
 	/**
 	 * Handles Mandrill inbound web hook
-	 * 
+	 *
 	 * @return void
 	 */
 	public function handle_post() {
@@ -68,7 +68,7 @@ class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 			list($reply->topic, $reply->nonce) = bbSubscriptions_Reply::parse_to( $parsed->msg->email );
 
 			$reply_id = $reply->insert();
-			
+
 			if ( $reply_id === false ) {
 				header( 'X-Fail: No reply ID', true, 400 );
 				echo 'Reply could not be added?'; // intentionally not translated

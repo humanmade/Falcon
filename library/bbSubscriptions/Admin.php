@@ -37,12 +37,14 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		register_setting( 'bbsub_options', 'bbsub_from_email', array(__CLASS__, 'validate_from_email') );
 		register_setting( 'bbsub_options', 'bbsub_send_to_author', array(__CLASS__, 'validate_send_to_author') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
+		register_setting( 'bbsub_options', 'bbsub_topic_notification', array(__CLASS__, 'validate_topic_notification') );
 
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
+		add_settings_field('bbsub_options_global_topic_notification', 'New Topic Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_global');
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
@@ -61,7 +63,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * Print the content
 	 */
 	public static function admin_page() {
-?>
+	?>
 		<div class="wrap">
 			<h2><?php _e('bbPress Reply by Email Options', 'bbsub') ?></h2>
 			<form method="post" action="options.php">
@@ -97,7 +99,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 				});
 			})
 		</script>
-<?php
+	<?php
 	}
 
 	/**
@@ -277,6 +279,44 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	public static function validate_send_to_author($input) {
 		return (bool) $input;
+	}
+
+	/**
+	 * Print field for new topic notification
+	 *
+	 * @see self::init()
+	 */
+	public function settings_field_topic_notification() {
+		global $wp_roles;
+
+		if ( !$wp_roles ) {
+			$wp_roles = new WP_Roles();
+		}
+
+		$options = get_option( 'bbsub_topic_notification', array() );
+
+		foreach ($wp_roles->get_names() as $key => $role_name) {
+			$current = in_array($key, $options) ? $key : '0';
+			?>
+			<label>
+				<input type="checkbox" value="<?php echo esc_attr( $key ); ?>" name="bbsub_topic_notification[]" <?php checked( $current, $key ); ?> />
+				<?php echo $role_name; ?>
+			</label>
+			<br />
+			<?php
+		}
+
+		echo '<span class="description">' . __( 'Sends new topic email and auto subscribe the users from these role to the new topic', 'bbsub' ) . '</span>';
+	}
+
+	/**
+	 * Validate the new topic notification
+	 *
+	 * @param array $input
+	 * @return array
+	 */
+	public function validate_topic_notification( $input ) {
+	    return is_array( $input ) ? $input : array();
 	}
 
 	/**

@@ -270,4 +270,50 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		$converter = new bbSubscriptions_Converter($html);
 		return $converter->convert();
 	}
+
+	/**
+	 * Notify user roles on new topic
+	 *
+	 * @wp-action bbp_new_topic
+	 */
+	public function notify_new_topic( $topic_id = 0, $forum_id = 0, $anonymous_data = 0, $topic_author = 0) {
+	    $user_roles = get_option( 'bbsub_topic_notification', array() );
+
+	    // bail out if no user roles found
+	    if ( !$user_roles ) {
+	    	return;
+	    }
+
+	    $recipients = array();
+	    foreach ($user_roles as $role) {
+	    	$users = get_users(array('role' => $role, 'fields' => array('ID', 'user_email', 'display_name')));
+	    	$recipients = array_merge( $recipients, $users );
+	    }
+
+	    // still no users?
+	    if ( !$recipients ) {
+	    	return;
+	    }
+
+	    // subscribe the users automatically
+	    foreach ($recipients as $user) {
+	    	bbp_add_user_subscription( $user->ID, $topic_id );
+	    }
+
+	    // Sanitize the HTML into text
+		$content = apply_filters( 'bbsub_html_to_text', bbp_get_topic_content( $topic_id ) );
+
+		// Build email
+		$text = "%1\$s\n\n";
+		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+		$text = sprintf($text, $content, bbp_get_topic_permalink( $topic_id ) );
+		$text = apply_filters( 'bbsub_topic_email_message', $text, $topic_id, $content );
+		$subject = apply_filters( 'bbsub_topic_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $topic_id);
+
+		self::$handler->send_mail( $recipients, $subject, $text, compact('topic_id', 'topic_author') );
+
+		do_action( 'bbp_post_notify_topic_subscribers', $topic_id, $recipients );
+
+	}
 }
