@@ -5,7 +5,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 
 	public static function bootstrap() {
 		// Kill the defaults
-		remove_action('bbp_new_reply', 'bbp_notify_subscribers', 1, 5);
+		remove_action( 'bbp_new_reply', 'bbp_notify_subscribers', 11 );
 
 		if (is_admin()) {
 			bbSubscriptions_Admin::bootstrap();
