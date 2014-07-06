@@ -102,7 +102,7 @@ abstract class bbSubscriptions_Autohooker {
 			return true;
 		}
 
-		$method = new ReflectionMethod('Sputnik_Library_Plugin_Base', 'check_eaccelerator_saneness');
+		$method = new ReflectionMethod('bbSubscriptions_Autohooker', 'check_eaccelerator_saneness');
 		$comment = $method->getDocComment();
 
 		return (strpos($comment, "If you can find me, it's sane.") !== false);
