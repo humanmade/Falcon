@@ -292,7 +292,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 *
 	 * @see self::init()
 	 */
-	public function settings_field_topic_notification() {
+	public static function settings_field_topic_notification() {
 		global $wp_roles;
 
 		if ( !$wp_roles ) {
