@@ -15,12 +15,6 @@ Author URI: http://ryanmccue.info/
 class bbSub {
 	public static $path;
 
-	public static function verify() {
-		remove_action('all_admin_notices', array('bbSub', 'report_error'));
-		//Sputnik::check(__FILE__, array('bbSub', 'load'));
-		bbSub::load();
-	}
-
 	public static function load() {
 		self::$path = __DIR__;
 		spl_autoload_register(array(get_called_class(), 'autoload'));
@@ -35,7 +29,7 @@ class bbSub {
 	 * Register cron event on activation
 	 */
 	public static function activation() {
-		wp_schedule_event(time(), 'bbsub_minutely', 'bbsub_check_inbox');	
+		wp_schedule_event(time(), 'bbsub_minutely', 'bbsub_check_inbox');
 	}
 
 	/**
@@ -69,6 +63,4 @@ class bbSub {
 register_activation_hook(__FILE__, array('bbSub', 'activation'));
 register_deactivation_hook(__FILE__, array('bbSub', 'deactivation'));
 
-//add_action('sputnik_loaded', array('bbSub', 'verify'));
-add_action('plugins_loaded', array('bbSub', 'verify'));
-add_action('all_admin_notices', array('bbSub', 'report_error'));
+add_action('plugins_loaded', array('bbSub', 'load'));
