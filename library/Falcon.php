@@ -28,7 +28,7 @@ class Falcon extends Falcon_Autohooker {
 		}
 
 		foreach ( self::get_available_connectors() as $key => $connector ) {
-			self::$connectors[ $key ] = new $connector();
+			self::$connectors[ $key ] = new $connector( self::$handler );
 		}
 	}
 

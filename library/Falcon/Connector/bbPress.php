@@ -1,7 +1,11 @@
 <?php
 
 class Falcon_Connector_bbPress {
-	public function __construct() {
+	protected $handler;
+
+	public function __construct( $handler ) {
+		$this->handler = $handler;
+
 		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 10, 4 );
 		add_filter( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );
 	}
@@ -44,7 +48,7 @@ class Falcon_Connector_bbPress {
 		$text = apply_filters( 'bbsub_topic_email_message', $text, $topic_id, $content );
 		$subject = apply_filters( 'bbsub_topic_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $topic_id);
 
-		self::$handler->send_mail( $recipients, $subject, $text, compact('topic_id', 'topic_author') );
+		$this->handler->send_mail( $recipients, $subject, $text, compact('topic_id', 'topic_author') );
 
 		do_action( 'bbp_post_notify_topic_subscribers', $topic_id, $recipients );
 
@@ -56,7 +60,7 @@ class Falcon_Connector_bbPress {
 	 * @wp-filter bbp_new_reply 1
 	 */
 	public function notify_on_reply( $reply_id = 0, $topic_id = 0, $forum_id = 0, $anonymous_data = false, $reply_author = 0 ) {
-		if (self::$handler === null) {
+		if ($this->handler === null) {
 			return false;
 		}
 
@@ -113,7 +117,7 @@ class Falcon_Connector_bbPress {
 		$text = apply_filters( 'bbsub_email_message', $text, $reply_id, $topic_id, $content );
 		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id);
 
-		self::$handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
+		$this->handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 

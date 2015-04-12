@@ -59,7 +59,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @wp-action admin_menu
 	 */
 	public static function register_menu() {
-		add_options_page(_x('Falcon', 'page title', 'falcon'), _x('Reply by Email', 'menu title', 'falcon'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
+		add_options_page(_x('Falcon', 'page title', 'falcon'), _x('Falcon', 'menu title', 'falcon'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
 	}
 
 	/**
