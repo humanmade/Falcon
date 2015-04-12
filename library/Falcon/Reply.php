@@ -2,7 +2,7 @@
 
 use \EmailReplyParser\EmailReplyParser;
 
-class bbSubscriptions_Reply {
+class Falcon_Reply {
 	public $from;
 	public $subject;
 	public $body;
@@ -15,8 +15,8 @@ class bbSubscriptions_Reply {
 	public function insert() {
 		$user = get_user_by_email($this->from);
 
-		if ($this->nonce !== bbSubscriptions::get_hash($this->topic, $user)) {
-			bbSubscriptions::notify_invalid($user, $this->topic);
+		if ($this->nonce !== Falcon::get_hash($this->topic, $user)) {
+			Falcon::notify_invalid($user, $this->topic);
 			return false;
 		}
 

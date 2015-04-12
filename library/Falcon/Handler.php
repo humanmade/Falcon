@@ -1,6 +1,6 @@
 <?php
 
-interface bbSubscriptions_Handler {
+interface Falcon_Handler {
 	/**
 	 * Construct the handler
 	 *

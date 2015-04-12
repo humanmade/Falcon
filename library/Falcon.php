@@ -1,6 +1,6 @@
 <?php
 
-class bbSubscriptions extends bbSubscriptions_Autohooker {
+class Falcon extends Falcon_Autohooker {
 	protected static $handler = null;
 
 	protected static $connectors = array();
@@ -10,7 +10,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		remove_action( 'bbp_new_reply', 'bbp_notify_subscribers', 11 );
 
 		if (is_admin()) {
-			bbSubscriptions_Admin::bootstrap();
+			Falcon_Admin::bootstrap();
 		}
 
 		try {
@@ -22,7 +22,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		}
 		catch (Exception $e) {
 			add_action('all_admin_notices', function () use ($e) {
-				printf('<div class="error"><p>' . __('Problem setting up bbSubscriptions! %s', 'bbsub') . '</p></div>', $e->getMessage());
+				printf('<div class="error"><p>' . __('Problem setting up Falcon! %s', 'bbsub') . '</p></div>', $e->getMessage());
 			});
 
 		}
@@ -39,8 +39,8 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 */
 	public static function get_handlers() {
 		$default = array(
-			'postmark' => 'bbSubscriptions_Handler_Postmark',
-			'mandrill' => 'bbSubscriptions_Handler_Mandrill',
+			'postmark' => 'Falcon_Handler_Postmark',
+			'mandrill' => 'Falcon_Handler_Mandrill',
 		);
 		return apply_filters('bbsub_handlers', $default);
 	}
@@ -55,7 +55,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 			$type = get_option('bbsub_handler_type', false);
 		}
 
-		$handlers = bbSubscriptions::get_handlers();
+		$handlers = self::get_handlers();
 
 		if (empty($type)) {
 			throw new Exception(__('No handler set in the options', 'bbsub'));
@@ -93,10 +93,10 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		$connectors = array();
 
 		if (is_plugin_active('bbpress/bbpress.php')) {
-			$connectors['bbpress'] = 'bbSubscriptions_Connector_bbPress';
+			$connectors['bbpress'] = 'Falcon_Connector_bbPress';
 		}
 
-		return apply_filters( 'bbsub_connectors', $connectors );
+		return apply_filters( 'falcon_connectors', $connectors );
 	}
 
 	public static function get_connectors() {
@@ -188,7 +188,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 * @wp-filter cron_schedules
 	 */
 	public static function add_schedule($schedules) {
-		$schedules['bbsub_minutely'] = array('interval' => 60, 'display' => 'Once Every Minute');
+		$schedules['falcon_minutely'] = array('interval' => 60, 'display' => 'Once Every Minute');
 		return $schedules;
 	}
 
@@ -223,7 +223,7 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	 * @return string Text version of the content
 	 */
 	public static function convert_html_to_text($html) {
-		$converter = new bbSubscriptions_Converter($html);
+		$converter = new Falcon_Converter($html);
 		return $converter->convert();
 	}
 }

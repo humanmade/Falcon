@@ -1,6 +1,6 @@
 <?php
 
-class bbSubscriptions_Connector_bbPress {
+class Falcon_Connector_bbPress {
 	public function __construct() {
 		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 10, 4 );
 		add_filter( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );

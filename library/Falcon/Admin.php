@@ -1,6 +1,6 @@
 <?php
 
-class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
+class Falcon_Admin extends Falcon_Autohooker {
 	/**
 	 * Should we wipe the handler-specific options?
 	 *
@@ -45,7 +45,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
 
-		foreach ( bbSubscriptions::get_connectors() as $connector ) {
+		foreach ( Falcon::get_connectors() as $connector ) {
 			$connector->register_settings();
 		}
 
@@ -59,7 +59,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @wp-action admin_menu
 	 */
 	public static function register_menu() {
-		add_options_page(_x('Reply by Email', 'page title', 'bbsub'), _x('Reply by Email', 'menu title', 'bbsub'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
+		add_options_page(_x('Falcon', 'page title', 'falcon'), _x('Reply by Email', 'menu title', 'falcon'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
 	}
 
 	/**
@@ -68,7 +68,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	public static function admin_page() {
 	?>
 		<div class="wrap">
-			<h2><?php _e('bbPress Reply by Email Options', 'bbsub') ?></h2>
+			<h2><?php _e('Falcon Options', 'falcon') ?></h2>
 			<form method="post" action="options.php">
 				<?php settings_fields('bbsub_options') ?>
 				<?php do_settings_sections('bbsub_options') ?>
@@ -113,13 +113,13 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	public static function ajax_handler_section() {
 		try {
 			if (!isset($_REQUEST['handler'])) {
-				throw new Exception(__('Invalid handler type', 'bbsub'));
+				throw new Exception(__('Invalid handler type', 'falcon'));
 			}
 
 			// Setup the handler settings for the newly selected handler
 			$handler = self::validate_type($_REQUEST['handler']);
 			if (!$handler) {
-				throw new Exception(__('Invalid handler', 'bbsub'));
+				throw new Exception(__('Invalid handler', 'falcon'));
 			}
 
 			$options = get_option('bbsub_handler_options', array());
@@ -163,7 +163,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_section_main() {
-		echo '<p>' . __('Main settings for the plugin', 'bbsub') . '</p>';
+		echo '<p>' . __('Main settings for the plugin', 'falcon') . '</p>';
 	}
 
 	/**
@@ -173,14 +173,14 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	public static function settings_field_type() {
 		$current = get_option('bbsub_handler_type', false);
-		$available = bbSubscriptions::get_handlers();
+		$available = Falcon::get_handlers();
 
 		if (empty($available)) {
-			echo '<p class="error">' . __('No handlers are available!', 'bbsub') . '</p>';
+			echo '<p class="error">' . __('No handlers are available!', 'falcon') . '</p>';
 		}
 
 		echo '<select name="bbsub_handler_type" id="bbsub_options_global_type">';
-		echo '<option>' . _x('None', 'handler', 'bbsub') . '</option>';
+		echo '<option>' . _x('None', 'handler', 'falcon') . '</option>';
 		foreach ($available as $type => $class) {
 			echo '<option value="' . esc_attr($type) . '"' . selected($current, $type) . '>' . esc_html($class::get_name()) . '</option>';
 		}
@@ -195,7 +195,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 * @return string|bool Selected class name if valid, otherwise false
 	 */
 	public static function validate_type($input) {
-		if ( in_array( $input, array_keys(bbSubscriptions::get_handlers()) ) ) {
+		if ( in_array( $input, array_keys(Falcon::get_handlers()) ) ) {
 			if ($input !== get_option('bbsub_handler_type', false) && empty($_POST['bbsub_used_ajax'])) {
 				self::$wipe_handler_options = true;
 			}
@@ -205,7 +205,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		add_settings_error(
 			'bbsub_handler_type',
 			'bbsub_handler_invalid',
-			__('The selected handler is invalid', 'bbsub')
+			__('The selected handler is invalid', 'falcon')
 		);
 		return false;
 	}
@@ -220,7 +220,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 
 		echo '<input type="text" name="bbsub_replyto" class="regular-text" value="' . esc_attr($current) . '" />';
 		echo '<p class="description">';
-		_e('This is in the form <code>reply+%1$d-%2$s@example.com</code> where <code>%1$d</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'bbsub');
+		_e('This is in the form <code>reply+%1$d-%2$s@example.com</code> where <code>%1$d</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'falcon');
 		echo '</p>';
 	}
 
@@ -239,7 +239,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			add_settings_error(
 				'bbsub_replyto',
 				'bbsub_replyto_notokens',
-				__('The <code>%1$d</code> and <code>%2$s</code> tokens must be in the reply-to address', 'bbsub')
+				__('The <code>%1$d</code> and <code>%2$s</code> tokens must be in the reply-to address', 'falcon')
 			);
 			return $oldvalue;
 		}
@@ -253,7 +253,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			add_settings_error(
 				'bbsub_replyto',
 				'bbsub_replyto_invalid',
-				__('The reply-to address must be a valid address', 'bbsub')
+				__('The reply-to address must be a valid address', 'falcon')
 			);
 			return $oldvalue;
 		}
@@ -270,7 +270,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		$current = get_option('bbsub_send_to_author', '');
 
 		echo '<label><input type="checkbox" name="bbsub_send_to_author" ' . checked($current, true, false) . ' /> ';
-		_e('Send a notification to the reply author', 'bbsub');
+		_e('Send a notification to the reply author', 'falcon');
 		echo '</label>';
 	}
 
@@ -293,7 +293,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		$current = get_option('bbsub_from_email', '');
 
 		echo '<input type="email" name="bbsub_from_email" class="regular-text" value="' . esc_attr($current) . '" />';
-		echo '<p class="description">' . __('Leave blank to use the default email address (<code>wordpress@</code>)', 'bbsub') . '</p>';
+		echo '<p class="description">' . __('Leave blank to use the default email address (<code>wordpress@</code>)', 'falcon') . '</p>';
 	}
 
 	/**
@@ -311,7 +311,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			add_settings_error(
 				'bbsub_from_email',
 				'bbsub_from_invalid',
-				__('The from address must be a valid address', 'bbsub')
+				__('The from address must be a valid address', 'falcon')
 			);
 			return $oldvalue;
 		}
@@ -337,10 +337,10 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			return;
 
 		echo '<div id="bbsub-handlersettings-header">';
-		echo '<h3 id="bbsub-handlersettings-title">' . __('Handler Settings', 'bbsub') . '</h3>';
+		echo '<h3 id="bbsub-handlersettings-title">' . __('Handler Settings', 'falcon') . '</h3>';
 
 		try {
-			$handler = bbSubscriptions::get_handler_class();
+			$handler = Falcon::get_handler_class();
 		}
 		catch (Exception $e) {
 			return;
@@ -359,7 +359,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 			$current = get_option('bbsub_handler_options', array());
 		}
 		try {
-			$handler = bbSubscriptions::get_handler_class($handler_type);
+			$handler = Falcon::get_handler_class($handler_type);
 		}
 		catch (Exception $e) {
 			return false;
@@ -378,7 +378,7 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		}
 
 		try {
-			$handler = bbSubscriptions::get_handler_class();
+			$handler = Falcon::get_handler_class();
 		}
 		catch (Exception $e) {
 			return array();

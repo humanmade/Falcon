@@ -14,7 +14,7 @@
  * @package bbSubscriptions
  * @subpackage Handlers
  */
-class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
+class Falcon_Handler_Mandrill implements Falcon_Handler {
 	public function __construct( $options ) {}
 
 	public function check_inbox() {}
@@ -22,11 +22,11 @@ class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 	public static function options_section_header() {
 	?>
 	<p><?php printf(
-		__("Once you've set your Reply-To address, set your Route in your <a href='%s'>Mandrill inbound dashboard</a>", 'bbsub'),
+		__("Once you've set your Reply-To address, set your Route in your <a href='%s'>Mandrill inbound dashboard</a>", 'falcon'),
 		'https://mandrillapp.com/inbound'
 	) ?></p>
 
-	<p><?php _e('For example, if <code>reply+%1$d-%2$s@yourdomain.com</code> is your reply-to, your Mandrill route would be <code>reply+*@yourdomain.com</code>', 'bbsub') ?></p>
+	<p><?php _e('For example, if <code>reply+%1$d-%2$s@yourdomain.com</code> is your reply-to, your Mandrill route would be <code>reply+*@yourdomain.com</code>', 'falcon') ?></p>
 	<?php
 	}
 
@@ -39,8 +39,8 @@ class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 
 		foreach ($users as $user) {
 
-			$from_address = sprintf( '%s <%s>', $reply_author_name, bbSubscriptions::get_from_address() );
-			$reply_to = bbSubscriptions::get_reply_address( $topic_id, $user );
+			$from_address = sprintf( '%s <%s>', $reply_author_name, Falcon::get_from_address() );
+			$reply_to = Falcon::get_reply_address( $topic_id, $user );
 			$headers = "Reply-to:$reply_to\nFrom:$from_address";
 
 			wp_mail( $user->user_email, $subject, $content, $headers );
@@ -60,12 +60,12 @@ class bbSubscriptions_Handler_Mandrill implements bbSubscriptions_Handler {
 				return;
 			}
 
-			$reply = new bbSubscriptions_Reply();
+			$reply = new Falcon_Reply();
 			$reply->from = $parsed->msg->from_email;
 			$reply->subject = $parsed->msg->subject;
 			$reply->body = $parsed->msg->text;
 
-			list($reply->topic, $reply->nonce) = bbSubscriptions_Reply::parse_to( $parsed->msg->email );
+			list($reply->topic, $reply->nonce) = Falcon_Reply::parse_to( $parsed->msg->email );
 
 			$reply_id = $reply->insert();
 
