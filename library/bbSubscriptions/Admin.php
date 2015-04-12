@@ -39,12 +39,18 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
 		register_setting( 'bbsub_options', 'bbsub_topic_notification', array(__CLASS__, 'validate_topic_notification') );
 
+		// Global Settings
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
 		add_settings_field('bbsub_options_global_type', 'Messaging Handler', array(__CLASS__, 'settings_field_type'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
-		add_settings_field('bbsub_options_global_topic_notification', 'New Topic Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_global');
+
+		// bbPress settings
+		if (is_plugin_active('bbpress/bbpress.php')) {
+			add_settings_section('bbsub_options_bbpress', 'bbPress', '__return_null', 'bbsub_options');
+			add_settings_field('bbsub_options_bbpress_topic_notification', 'New Topic Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_bbpress');
+		}
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
