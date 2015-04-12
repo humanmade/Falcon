@@ -37,7 +37,6 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		register_setting( 'bbsub_options', 'bbsub_from_email', array(__CLASS__, 'validate_from_email') );
 		register_setting( 'bbsub_options', 'bbsub_send_to_author', array(__CLASS__, 'validate_send_to_author') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
-		register_setting( 'bbsub_options', 'bbsub_topic_notification', array(__CLASS__, 'validate_topic_notification') );
 
 		// Global Settings
 		add_settings_section('bbsub_options_global', 'Main Settings', array(__CLASS__, 'settings_section_main'), 'bbsub_options');
@@ -46,10 +45,8 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
 
-		// bbPress settings
-		if (is_plugin_active('bbpress/bbpress.php')) {
-			add_settings_section('bbsub_options_bbpress', 'bbPress', '__return_null', 'bbsub_options');
-			add_settings_field('bbsub_options_bbpress_topic_notification', 'New Topic Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_bbpress');
+		foreach ( bbSubscriptions::get_connectors() as $connector ) {
+			$connector->register_settings();
 		}
 
 		// Note: title is false so that we can handle it ourselves
@@ -285,44 +282,6 @@ class bbSubscriptions_Admin extends bbSubscriptions_Autohooker {
 	 */
 	public static function validate_send_to_author($input) {
 		return (bool) $input;
-	}
-
-	/**
-	 * Print field for new topic notification
-	 *
-	 * @see self::init()
-	 */
-	public static function settings_field_topic_notification() {
-		global $wp_roles;
-
-		if ( !$wp_roles ) {
-			$wp_roles = new WP_Roles();
-		}
-
-		$options = get_option( 'bbsub_topic_notification', array() );
-
-		foreach ($wp_roles->get_names() as $key => $role_name) {
-			$current = in_array($key, $options) ? $key : '0';
-			?>
-			<label>
-				<input type="checkbox" value="<?php echo esc_attr( $key ); ?>" name="bbsub_topic_notification[]" <?php checked( $current, $key ); ?> />
-				<?php echo $role_name; ?>
-			</label>
-			<br />
-			<?php
-		}
-
-		echo '<span class="description">' . __( 'Sends new topic email and auto subscribe the users from these role to the new topic', 'bbsub' ) . '</span>';
-	}
-
-	/**
-	 * Validate the new topic notification
-	 *
-	 * @param array $input
-	 * @return array
-	 */
-	public function validate_topic_notification( $input ) {
-	    return is_array( $input ) ? $input : array();
 	}
 
 	/**

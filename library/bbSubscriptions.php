@@ -3,6 +3,8 @@
 class bbSubscriptions extends bbSubscriptions_Autohooker {
 	protected static $handler = null;
 
+	protected static $connectors = array();
+
 	public static function bootstrap() {
 		// Kill the defaults
 		remove_action( 'bbp_new_reply', 'bbp_notify_subscribers', 11 );
@@ -23,7 +25,10 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 				printf('<div class="error"><p>' . __('Problem setting up bbSubscriptions! %s', 'bbsub') . '</p></div>', $e->getMessage());
 			});
 
-			return false;
+		}
+
+		foreach ( self::get_available_connectors() as $key => $connector ) {
+			self::$connectors[ $key ] = new $connector();
 		}
 	}
 
@@ -75,6 +80,27 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 		$handler = apply_filters('bbsub_handler_' . $type, new $handler($options), $options);
 
 		return $handler;
+	}
+
+	/**
+	 * Get available connectors
+	 *
+	 * @return array
+	 */
+	protected static function get_available_connectors() {
+		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+
+		$connectors = array();
+
+		if (is_plugin_active('bbpress/bbpress.php')) {
+			$connectors['bbpress'] = 'bbSubscriptions_Connector_bbPress';
+		}
+
+		return apply_filters( 'bbsub_connectors', $connectors );
+	}
+
+	public static function get_connectors() {
+		return self::$connectors;
 	}
 
 	/**
@@ -167,76 +193,6 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	}
 
 	/**
-	 * Send a notification to subscribers
-	 *
-	 * @wp-filter bbp_new_reply 1
-	 */
-	public static function notify_on_reply( $reply_id = 0, $topic_id = 0, $forum_id = 0, $anonymous_data = false, $reply_author = 0 ) {
-		if (self::$handler === null) {
-			return false;
-		}
-
-		global $wpdb;
-
-		if (!bbp_is_subscriptions_active()) {
-			return false;
-		}
-
-		$reply_id = bbp_get_reply_id( $reply_id );
-		$topic_id = bbp_get_topic_id( $topic_id );
-		$forum_id = bbp_get_forum_id( $forum_id );
-
-		if (!bbp_is_reply_published($reply_id)) {
-			return false;
-		}
-
-		if (!bbp_is_topic_published($topic_id)) {
-			return false;
-		}
-
-		$user_ids = bbp_get_topic_subscribers($topic_id, true);
-		if (empty($user_ids)) {
-			return false;
-		}
-
-		// Poster name
-		$reply_author_name = apply_filters('bbsub_reply_author_name', bbp_get_reply_author_display_name($reply_id));
-
-		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
-
-		// Don't send notifications to the person who made the post
-		$send_to_author = get_option('bbsub_send_to_author', false);
-
-		if (!$send_to_author && !empty($reply_author)) {
-			$user_ids = array_filter($user_ids, function ($id) use ($reply_author) {
-				return ((int) $id !== (int) $reply_author);
-			});
-		}
-
-		// Get userdata for all users
-		$user_ids = array_map(function ($id) {
-			return get_userdata($id);
-		}, $user_ids);
-
-		// Sanitize the HTML into text
-		$content = apply_filters('bbsub_html_to_text', bbp_get_reply_content($reply_id));
-
-		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf($text, $content, bbp_get_reply_url($reply_id));
-		$text = apply_filters( 'bbsub_email_message', $text, $reply_id, $topic_id, $content );
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id);
-
-		self::$handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
-
-		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
-
-		return true;
-	}
-
-	/**
 	 * @wp-action bbsub_check_inbox
 	 */
 	public static function check_inbox() {
@@ -269,51 +225,5 @@ class bbSubscriptions extends bbSubscriptions_Autohooker {
 	public static function convert_html_to_text($html) {
 		$converter = new bbSubscriptions_Converter($html);
 		return $converter->convert();
-	}
-
-	/**
-	 * Notify user roles on new topic
-	 *
-	 * @wp-action bbp_new_topic
-	 */
-	public function notify_new_topic( $topic_id = 0, $forum_id = 0, $anonymous_data = 0, $topic_author = 0) {
-	    $user_roles = get_option( 'bbsub_topic_notification', array() );
-
-	    // bail out if no user roles found
-	    if ( !$user_roles ) {
-	    	return;
-	    }
-
-	    $recipients = array();
-	    foreach ($user_roles as $role) {
-	    	$users = get_users(array('role' => $role, 'fields' => array('ID', 'user_email', 'display_name')));
-	    	$recipients = array_merge( $recipients, $users );
-	    }
-
-	    // still no users?
-	    if ( !$recipients ) {
-	    	return;
-	    }
-
-	    // subscribe the users automatically
-	    foreach ($recipients as $user) {
-	    	bbp_add_user_subscription( $user->ID, $topic_id );
-	    }
-
-	    // Sanitize the HTML into text
-		$content = apply_filters( 'bbsub_html_to_text', bbp_get_topic_content( $topic_id ) );
-
-		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf($text, $content, bbp_get_topic_permalink( $topic_id ) );
-		$text = apply_filters( 'bbsub_topic_email_message', $text, $topic_id, $content );
-		$subject = apply_filters( 'bbsub_topic_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $topic_id);
-
-		self::$handler->send_mail( $recipients, $subject, $text, compact('topic_id', 'topic_author') );
-
-		do_action( 'bbp_post_notify_topic_subscribers', $topic_id, $recipients );
-
 	}
 }
