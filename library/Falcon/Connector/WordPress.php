@@ -4,6 +4,11 @@ class Falcon_Connector_WordPress {
 	const SENT_META_KEY = 'falcon_sent';
 	const MESSAGE_ID_KEY = 'falcon_message_ids';
 
+	/**
+	 * Sending handler
+	 *
+	 * @var Falcon_Handler
+	 */
 	protected $handler;
 
 	public function __construct( $handler ) {
