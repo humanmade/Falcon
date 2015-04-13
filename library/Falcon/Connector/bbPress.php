@@ -48,7 +48,11 @@ class Falcon_Connector_bbPress {
 		$text = apply_filters( 'bbsub_topic_email_message', $text, $topic_id, $content );
 		$subject = apply_filters( 'bbsub_topic_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $topic_id);
 
-		$this->handler->send_mail( $recipients, $subject, $text, compact('topic_id', 'topic_author') );
+		$options = array(
+			'author' => bbp_get_topic_author_display_name( $topic_id ),
+			'id'     => $topic_id,
+		);
+		$this->handler->send_mail( $recipients, $subject, $text, $options );
 
 		do_action( 'bbp_post_notify_topic_subscribers', $topic_id, $recipients );
 
@@ -117,7 +121,11 @@ class Falcon_Connector_bbPress {
 		$text = apply_filters( 'bbsub_email_message', $text, $reply_id, $topic_id, $content );
 		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id);
 
-		$this->handler->send_mail($user_ids, $subject, $text, compact('topic_id', 'reply_author_name'));
+		$options = array(
+			'id'     => $topic_id,
+			'author' => $reply_author_name,
+		);
+		$this->handler->send_mail( $user_ids, $subject, $text, $options );
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 

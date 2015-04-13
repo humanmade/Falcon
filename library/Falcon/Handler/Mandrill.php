@@ -34,13 +34,16 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 
 	public static function validate_options( $input ) {}
 
-	public function send_mail( $users, $subject, $content, $attrs ) {
-		extract( $attrs );
+	public function send_mail( $users, $subject, $content, $options ) {
+		$from = Falcon::get_from_address();
+		if ( ! empty( $options['author'] ) ) {
+			$from = sprintf( '%s <%s>', $options['author'], $from );
+		}
 
 		foreach ($users as $user) {
 
-			$from_address = sprintf( '%s <%s>', $reply_author_name, Falcon::get_from_address() );
-			$reply_to = Falcon::get_reply_address( $topic_id, $user );
+			$from_address = $from;
+			$reply_to = Falcon::get_reply_address( $options['id'], $user );
 			$headers = "Reply-to:$reply_to\nFrom:$from_address";
 
 			wp_mail( $user->user_email, $subject, $content, $headers );
