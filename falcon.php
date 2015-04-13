@@ -45,7 +45,7 @@ function falcon_deactivation() {
 function falcon_autoload($class) {
 	if ( strpos( $class, 'EmailReplyParser' ) === 0 ) {
 		$filename = str_replace( array( '_', '\\' ), '/', $class );
-		$filename = self::$path . '/vendor/EmailReplyParser/src/' . $filename . '.php';
+		$filename = FALCON_PATH . '/vendor/EmailReplyParser/src/' . $filename . '.php';
 		if ( file_exists( $filename ) ) {
 			require_once( $filename );
 		}
