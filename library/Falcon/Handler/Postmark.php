@@ -106,13 +106,13 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 			return;
 		}
 
-		$reply = new bbSubscriptions_Reply();
+		$reply = new Falcon_Reply();
 		$reply->from = $inbound->FromEmail();
 		$reply->subject = $inbound->Subject();
 		$reply->body = $inbound->TextBody();
 
 		$to = $inbound->Recipients();
-		list($reply->topic, $reply->nonce) = bbSubscriptions_Reply::parse_to($to[0]->Email);
+		list($reply->topic, $reply->nonce) = Falcon_Reply::parse_to($to[0]->Email);
 
 		$reply_id = $reply->insert();
 		if ($reply_id === false) {
