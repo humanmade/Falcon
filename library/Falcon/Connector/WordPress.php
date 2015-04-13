@@ -15,6 +15,8 @@ class Falcon_Connector_WordPress {
 		$this->handler = $handler;
 
 		add_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
+
+		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 	}
 
 	public static function is_allowed_type( $type ) {
@@ -164,6 +166,36 @@ class Falcon_Connector_WordPress {
 		}
 
 		return $recipients;
+	}
+
+	public function handle_insert( $value, Falcon_Reply $reply ) {
+		if ( ! empty( $value ) ) {
+			return $value;
+		}
+
+		$post = get_post( $reply->post );
+		if ( ! $this->is_allowed_type( $post->post_type ) ) {
+			return $value;
+		}
+
+		$user = $reply->get_user();
+
+		if ( ! $reply->is_valid() ) {
+			Falcon::notify_invalid( $user, $post->post_title );
+			return new WP_Error( 'falcon.connector.wordpress.invalid_reply' );
+		}
+
+		$data = array(
+			'comment_post_ID'      => $reply->post,
+			'user_id'              => $user->ID,
+			'comment_author'       => $user->display_name,
+			'comment_author_email' => $user->user_email,
+			'comment_author_url'   => $user->user_url,
+
+			'comment_content'  => $reply->parse_body(),
+		);
+
+		return wp_insert_comment( $data );
 	}
 
 	public function register_settings() {

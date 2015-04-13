@@ -8,6 +8,8 @@ class Falcon_Connector_bbPress {
 
 		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 10, 4 );
 		add_filter( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );
+
+		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 	}
 
 	/**
@@ -130,6 +132,50 @@ class Falcon_Connector_bbPress {
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
 		return true;
+	}
+
+	protected function is_allowed_type( $type ) {
+		$allowed = array( 'bbp_topic' );
+		return in_array( $type, $allowed );
+	}
+
+	public function handle_insert( $value, Falcon_Reply $reply ) {
+		if ( ! empty( $value ) ) {
+			return $value;
+		}
+
+		$post = get_post( $reply->post );
+		if ( ! $this->is_allowed_type( $post->post_type ) ) {
+			return $value;
+		}
+
+		$user = $reply->get_user();
+
+		if ( $reply->is_valid() ) {
+			Falcon::notify_invalid( $user, bbp_get_topic_title( $reply->post ) );
+			return false;
+		}
+
+		$new_reply = array(
+			'post_parent'   => $reply->post, // topic ID
+			'post_author'   => $user->ID,
+			'post_content'  => $reply->parse_body(),
+			'post_title'    => $reply->subject,
+		);
+		$meta = array(
+			'author_ip' => '127.0.0.1', // we could parse Received, but it's a pain, and inaccurate
+			'forum_id' => bbp_get_topic_forum_id($reply->post),
+			'topic_id' => $reply->post
+		);
+
+		$reply_id = bbp_insert_reply($new_reply, $meta);
+
+		do_action( 'bbp_new_reply', $reply_id, $meta['topic_id'], $meta['forum_id'], false, $new_reply['post_author'] );
+
+		// bbPress removes the user's subscription because bbp_update_reply() is hooked to 'bbp_new_reply' and it checks for $_POST['bbp_topic_subscription']
+		bbp_add_user_subscription( $new_reply['post_author'], $meta['topic_id'] );
+
+		return $reply_id;
 	}
 
 	public function register_settings() {

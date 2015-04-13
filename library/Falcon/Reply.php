@@ -7,19 +7,12 @@ class Falcon_Reply {
 	public $subject;
 	public $body;
 	public $nonce;
-	public $topic;
+	public $post;
 
 	public function __construct() {
 	}
 
-	public function insert() {
-		$user = get_user_by_email($this->from);
-
-		if ($this->nonce !== Falcon::get_hash($this->topic, $user)) {
-			Falcon::notify_invalid($user, $this->topic);
-			return false;
-		}
-
+	public function parse_body() {
 		// Parse the body and remove signatures, and reformat
 		$parts = array();
 		$fragments = EmailReplyParser::read($this->body);
@@ -51,26 +44,21 @@ class Falcon_Reply {
 		}
 		$content = implode("\n", $parts);
 
-		$reply = array(
-			'post_parent'   => $this->topic, // topic ID
-			'post_author'   => $user->ID,
-			'post_content'  => $content,
-			'post_title'    => $this->subject,
-		);
-		$meta = array(
-			'author_ip' => '127.0.0.1', // we could parse Received, but it's a pain, and inaccurate
-			'forum_id' => bbp_get_topic_forum_id($this->topic),
-			'topic_id' => $this->topic
-		);
+		return $content;
+	}
 
-		$reply_id = bbp_insert_reply($reply, $meta);
+	public function get_user() {
+		return get_user_by( 'email', $this->from );
+	}
 
-		do_action( 'bbp_new_reply', $reply_id, $meta['topic_id'], $meta['forum_id'], false, $reply['post_author'] );
+	public function is_valid() {
+		$user = $this->get_user();
 
-		// bbPress removes the user's subscription because bbp_update_reply() is hooked to 'bbp_new_reply' and it checks for $_POST['bbp_topic_subscription']
-		bbp_add_user_subscription( $reply['post_author'], $meta['topic_id'] );
+		return $this->nonce === Falcon::get_hash($this->post, $user);
+	}
 
-		return $reply_id;
+	public function insert() {
+		return apply_filters( 'falcon.reply.insert', null, $this );
 	}
 
 	public static function parse_to($address) {

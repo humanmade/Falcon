@@ -147,7 +147,7 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 		$reply->body = $inbound->TextBody();
 
 		$to = $inbound->Recipients();
-		list($reply->topic, $reply->nonce) = Falcon_Reply::parse_to($to[0]->Email);
+		list($reply->post, $reply->nonce) = Falcon_Reply::parse_to($to[0]->Email);
 
 		$reply_id = $reply->insert();
 		if ($reply_id === false) {
