@@ -164,18 +164,17 @@ class Falcon extends Falcon_Autohooker {
 	 * @param WP_User $user User that supposedly sent the email
 	 * @param int $topic_id Topic ID
 	 */
-	public static function notify_invalid($user, $topic_id) {
-		$topic_title = bbp_get_topic_title( $topic_id );
+	public static function notify_invalid($user, $title) {
 		// Build email
-		$text = "Hi %1$s,\n";
-		$text .= "Someone just tried to post to the '%2$1' topic as you, but were unable to\n";
-		$text .= "authenticate as you. If you recently tried to reply to this topic, try\n";
-		$text .= "replying to the original topic again. If that doesn't work, post on the\n";
-		$text .= "forums via your browser and ask an admin.\n";
-		$text .= "---\nThe admins at %3$s\n\n";
-		$text = sprintf($text, $content, $topic_title, get_option('blogname'));
+		$text = 'Hi %1$s,' . "\n";
+		$text .= 'Someone just tried to post to the "%2$s" topic as you, but were unable to' . "\n";
+		$text .= 'authenticate as you. If you recently tried to reply to this topic, try' . "\n";
+		$text .= 'replying to the original topic again. If that doesn\'t work, post on the' . "\n";
+		$text .= 'forums via your browser and ask an admin.' . "\n";
+		$text .= '---' . "\n" . 'The admins at %3$s' . "\n\n";
+		$text = sprintf($text, $user->display_name, $title, get_option('blogname'));
 
-		$text = apply_filters( 'bbsub_email_message_invalid', $message, $user->ID, $content );
+		$text = apply_filters( 'bbsub_email_message_invalid', $text, $user->ID );
 		$subject = apply_filters('bbsub_email_subject_invalid', '[' . get_option( 'blogname' ) . '] Invalid Reply Received', $user->ID);
 
 		wp_mail($user->use_email, $subject, $text);
