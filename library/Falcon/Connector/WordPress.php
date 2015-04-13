@@ -12,11 +12,28 @@ class Falcon_Connector_WordPress {
 		add_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
 	}
 
+	public static function is_allowed_type( $type ) {
+		// Only notify for allowed types
+		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
+		return in_array( $type, $allowed_types );
+	}
+
 	/**
 	 * Notify user roles on new topic
 	 */
 	public function notify_on_publish( $id = 0, $post = null ) {
 		if ( empty( $this->handler ) ) {
+			return;
+		}
+
+		// Double-check status
+		if ( get_post_status( $id ) !== 'publish' ) {
+			return;
+		}
+
+		// Only notify for allowed types
+		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
+		if ( ! $this->is_allowed_type( $post->post_type ) ) {
 			return;
 		}
 
