@@ -44,7 +44,31 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 				'To' => $user->user_email,
 				'Subject' => $subject,
 				'TextBody' => $content,
+				'Headers' => array(),
 			);
+
+			// Set the message ID if we've got one
+			if ( ! empty( $options['message-id'] ) ) {
+				$data['Headers'][] = array(
+					'Name' => 'Message-ID',
+					'Value' => $options['message-id'],
+				);
+			}
+
+			// If this is a reply, set the headers as needed
+			if ( ! empty( $options['in-reply-to'] ) ) {
+				$original = $options['in-reply-to'];
+				if ( is_array( $original ) ) {
+					$original = isset( $options['in-reply-to'][ $user->ID ] ) ? $options['in-reply-to'][ $user->ID ] : null;
+				}
+
+				if ( ! empty( $original ) ) {
+					$data['Headers'][] = array(
+						'Name' => 'In-Reply-To',
+						'Value' => $original,
+					);
+				}
+			}
 
 			$messages[ $user->ID ] = $this->send_single($data);
 		}
@@ -141,6 +165,18 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 	 */
 	public static function get_name() {
 		return 'Postmark';
+	}
+
+	/**
+	 * Specify that Postmark allows custom message IDs
+	 *
+	 * Postmark lets us set our own message ID, so allow Falcon to operate in
+	 * Leader Mode.
+	 *
+	 * @return bool
+	 */
+	public static function supports_message_ids() {
+		return true;
 	}
 
 	/**

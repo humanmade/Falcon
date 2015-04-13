@@ -16,7 +16,19 @@ interface Falcon_Handler {
 	 */
 	public function __construct($options);
 
-	public function send_mail($users, $subject, $text, $attrs);
+	/**
+	 * Send a message to specified recipients
+	 *
+	 * @param array $users Users to notify
+	 * @param string $subject Message subject
+	 * @param string $text Message text
+	 * @param array $options {
+	 *     @param int $id Post ID to use for hash
+	 *     @param string $author Author name (leave blank for no name)
+	 * }
+	 * @return array|null Map of user ID to message ID, or empty if IDs are not available.
+	 */
+	public function send_mail($users, $subject, $text, $options);
 
 	/**
 	 * Check the inbox for replies
@@ -32,6 +44,24 @@ interface Falcon_Handler {
 	 * @return string
 	 */
 	public static function get_name();
+
+	/**
+	 * Does the handler support custom message IDs?
+	 *
+	 * Falcon can operate in one of two modes:
+	 *
+	 * 1. Leader Mode - Falcon will set the message ID for each message, and
+	 *    assume full control over them for threading purposes.
+	 * 2. Follower Mode - Falcon will observe message IDs set by the handler,
+	 *    and use them internally.
+	 *
+	 * Where possible, use leader mode, as this has cleaner handling. However,
+	 * not all handlers support custom message IDs, so follower mode must exist
+	 * for these.
+	 *
+	 * @return bool True to operate in leader mode, false to operate in follower mode.
+	 */
+	public static function supports_message_ids();
 
 	/**
 	 * Output a description for the options

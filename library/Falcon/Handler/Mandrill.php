@@ -84,4 +84,8 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 		return 'Mandrill';
 	}
 
+	public static function supports_message_ids() {
+		return false;
+	}
+
 }

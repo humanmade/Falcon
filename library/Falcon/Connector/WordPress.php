@@ -81,11 +81,59 @@ class Falcon_Connector_WordPress {
 			'id'     => $id,
 		);
 
-		$responses = $this->handler->send_mail( $recipients, $subject, $text, $options );
-		if ( ! empty( $responses ) ) {
-			update_post_meta( $id, 'falcon_message_ids', $responses );
+		if ( $this->handler->supports_message_ids() ) {
+			$options['message-id'] = $this->get_message_id_for_post( $post );
 		}
 
+		$responses = $this->handler->send_mail( $recipients, $subject, $text, $options );
+		if ( ! $this->handler->supports_message_ids() && ! empty( $responses ) ) {
+			update_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
+		}
+
+	}
+
+	/**
+	 * Get the Message ID for a post
+	 *
+	 * @param WP_Post $post Post object
+	 * @return string Message ID
+	 */
+	protected function get_message_id_for_post( WP_Post $post ) {
+		$left = 'falcon/' . $post->post_type . '/' . $post->ID;
+		$right = parse_url( home_url(), PHP_URL_HOST );
+
+		$id = sprintf( '<%s@%s>', $left, $right );
+
+		/**
+		 * Filter message IDs for posts
+		 *
+		 * @param string $id Message ID (conforming to RFC5322 Message-ID semantics)
+		 * @param WP_Post $post Post object
+		 */
+		return apply_filters( 'falcon.connector.wordpress.post_message_id', $id, $post );
+	}
+
+	/**
+	 * Get the Message ID for a comment
+	 *
+	 * @param stdClass $comment Comment object
+	 * @return string Message ID
+	 */
+	protected function get_message_id_for_comment( $comment ) {
+		$post = get_post( $comment->comment_post_ID );
+
+		$left = 'falcon/' . $post->post_type . '/' . $post->ID . '/' . $comment->comment_type . '/' . $comment->comment_ID;
+		$right = parse_url( home_url(), PHP_URL_HOST );
+
+		$id = sprintf( '<%s@%s>', $left, $right );
+
+		/**
+		 * Filter message IDs for posts
+		 *
+		 * @param string $id Message ID (conforming to RFC5322 Message-ID semantics)
+		 * @param stdClass $post Post object
+		 */
+		return apply_filters( 'falcon.connector.wordpress.comment_message_id', $id, $comment );
 	}
 
 	protected function get_post_subscribers( WP_Post $post ) {
