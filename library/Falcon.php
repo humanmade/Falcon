@@ -90,7 +90,9 @@ class Falcon extends Falcon_Autohooker {
 	protected static function get_available_connectors() {
 		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
-		$connectors = array();
+		$connectors = array(
+			'wordpress' => 'Falcon_Connector_WordPress'
+		);
 
 		if (is_plugin_active('bbpress/bbpress.php')) {
 			$connectors['bbpress'] = 'Falcon_Connector_bbPress';
@@ -104,34 +106,34 @@ class Falcon extends Falcon_Autohooker {
 	}
 
 	/**
-	 * Get the reply-to address for a topic and user
+	 * Get the reply-to address for a post and user
 	 *
-	 * @param int $topic Topic ID
+	 * @param int $post_id Post ID
 	 * @param WP_User $user User object
 	 * @return string Full email address
 	 */
-	public static function get_reply_address($topic, $user) {
+	public static function get_reply_address($post_id, $user) {
 		$address = get_option('bbsub_replyto', false);
 		if (empty($address)) {
 			throw new Exception(__('Invalid reply-to address', 'bbsub'));
 		}
 
-		return sprintf($address, $topic, self::get_hash($topic, $user));
+		return sprintf($address, $post_id, self::get_hash($post_id, $user));
 	}
 
 	/**
-	 * Get the verification hash for a topic and user
+	 * Get the verification hash for a post and user
 	 *
 	 * Uses a HMAC rather than a straight hash to avoid vulnerabilities.
 	 * @see http://benlog.com/articles/2008/06/19/dont-hash-secrets/
 	 * @see http://blog.jcoglan.com/2012/06/09/why-you-should-never-use-hash-functions-for-message-authentication/
 	 *
-	 * @param int $topic Topic ID
+	 * @param int $post_id Post ID
 	 * @param WP_User $user User object
 	 * @return string Verification hash (10 characters long)
 	 */
-	public static function get_hash($topic, $user) {
-		return hash_hmac('sha1', $topic . '|' . $user->ID, 'bbsub_reply_by_email');
+	public static function get_hash($post_id, $user) {
+		return hash_hmac('sha1', $post_id . '|' . $user->ID, 'bbsub_reply_by_email');
 	}
 
 	/**
