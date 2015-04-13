@@ -56,7 +56,7 @@ class Falcon_Connector_WordPress {
 			return;
 		}
 
-		$recipients = $this->get_post_subscribers();
+		$recipients = $this->get_post_subscribers( $post );
 
 		// still no users?
 		if ( empty( $recipients ) ) {
@@ -88,7 +88,7 @@ class Falcon_Connector_WordPress {
 
 	}
 
-	protected function get_post_subscribers() {
+	protected function get_post_subscribers( WP_Post $post ) {
 		$user_roles = get_option( 'falcon_wp_auto_roles', array() );
 
 		// Bail out if no user roles found
