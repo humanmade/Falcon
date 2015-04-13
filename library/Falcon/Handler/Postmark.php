@@ -36,6 +36,7 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 			$from = sprintf( '%s <%s>', $options['author'], $from );
 		}
 
+		$messages = array();
 		foreach ($users as $user) {
 			$data = array(
 				'From' => $from,
@@ -45,8 +46,10 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 				'TextBody' => $content,
 			);
 
-			$this->send_single($data);
+			$messages[ $user->ID ] = $this->send_single($data);
 		}
+
+		return $messages;
 	}
 
 	protected function send_single($data) {
@@ -64,7 +67,8 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 		$code = wp_remote_retrieve_response_code($response);
 		switch ($code) {
 			case 200:
-				return true;
+				break;
+
 			case 401:
 				throw new Exception(__('Invalid API key', 'falcon'), 401);
 			case 422:
@@ -74,6 +78,13 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 			default:
 				throw new Exception(__('Unknown error', 'falcon'), $code);
 		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ) );
+		if ( empty( $data ) ) {
+			throw new Exception(__('Invalid response from Postmark', 'falcon'));
+		}
+
+		return $data->MessageID;
 	}
 
 	/**

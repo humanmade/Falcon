@@ -2,6 +2,7 @@
 
 class Falcon_Connector_WordPress {
 	const SENT_META_KEY = 'falcon_sent';
+	const MESSAGE_ID_KEY = 'falcon_message_ids';
 
 	protected $handler;
 
@@ -63,7 +64,10 @@ class Falcon_Connector_WordPress {
 			'id'     => $id,
 		);
 
-		$this->handler->send_mail( $recipients, $subject, $text, $options );
+		$responses = $this->handler->send_mail( $recipients, $subject, $text, $options );
+		if ( ! empty( $responses ) ) {
+			update_post_meta( $id, 'falcon_message_ids', $responses );
+		}
 
 	}
 
