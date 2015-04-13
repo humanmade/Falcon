@@ -100,6 +100,8 @@ class Falcon_Connector_WordPress {
 			update_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
 		}
 
+		// Stop any future double-sends
+		update_post_meta( $id, static::SENT_META_KEY, true );
 	}
 
 	/**
