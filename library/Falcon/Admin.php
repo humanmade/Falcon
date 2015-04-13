@@ -78,6 +78,20 @@ class Falcon_Admin extends Falcon_Autohooker {
 
 		<script type="text/javascript">
 			jQuery(document).ready(function ($) {
+				var clearForm = function () {
+					// Replace the title and form with the contents
+					var $header = $('#bbsub-handlersettings-header');
+					var $table = $header.next();
+					if ( $table.is( '.form-table' ) ) {
+						$table.remove();
+					}
+					$header.remove();
+
+					var $error = $('#bbsub-handlersettings-error');
+					if ( $error.length ) {
+						$error.remove();
+					}
+				};
 				$('#bbsub_options_global_type').on('change', function (e) {
 					$('#bbsub_options_global_type').after(' <img src="<?php echo esc_js( esc_url( admin_url( 'images/loading.gif' ) ) ); ?>" id="bbsub-loading" />' );
 					$.ajax({
@@ -87,15 +101,15 @@ class Falcon_Admin extends Falcon_Autohooker {
 							handler: $(this).val()
 						},
 						success: function (response) {
-							// Replace the title and form with the contents
-							$('#bbsub-handlersettings-header').next().remove().end().remove();
-							//$('#bbsub-handlersettings-title').replaceWith(response);
+							clearForm();
+
 							$('#bbsub-handlersettings-insert').after(response);
 							$('#bbsub-loading').remove();
 						},
 						error: function (response) {
-							// Replace just the form with the error message
-							$('#bbsub-handlersettings-header').next().replaceWith(response.responseText);
+							clearForm();
+
+							$('#bbsub-handlersettings-insert').after(response.responseText);
 							$('#bbsub-loading').remove();
 						}
 					});
@@ -325,7 +339,9 @@ class Falcon_Admin extends Falcon_Autohooker {
 			self::$registered_handler_settings = true;
 		}
 
-		echo '<div id="bbsub-handlersettings-insert"></div>';
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			echo '<div id="bbsub-handlersettings-insert"></div>';
+		}
 
 		global $wp_settings_fields;
 
