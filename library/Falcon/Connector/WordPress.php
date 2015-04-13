@@ -16,6 +16,9 @@ class Falcon_Connector_WordPress {
 
 		add_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
 
+		add_action( 'wp_insert_comment', array( $this, 'notify_on_reply' ), 10, 2 );
+		add_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
+
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 	}
 
@@ -100,6 +103,75 @@ class Falcon_Connector_WordPress {
 	}
 
 	/**
+	 * Send a notification to subscribers
+	 */
+	public function notify_on_reply( $id = 0, $comment = null ) {
+		if ( empty( $this->handler ) ) {
+			return false;
+		}
+
+		if ( wp_get_comment_status( $comment ) !== 'approved' ) {
+			return false;
+		}
+
+		// Is the post published?
+		$post = get_post( $comment->comment_post_ID );
+		if ( get_post_status( $post ) !== 'publish' ) {
+			return false;
+		}
+
+		// Grab the users we should notify
+		$users = $this->get_comment_subscribers( $comment );
+		if ( empty( $users ) ) {
+			return false;
+		}
+
+		// Poster name
+		$reply_author_name = apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author );
+
+		// Don't send notifications to the person who made the post
+		$send_to_author = get_option('bbsub_send_to_author', false);
+
+		if ( ! $send_to_author && ! empty( $comment->user_id ) ) {
+			$author = (int) $comment->user_id;
+
+			$users = array_filter( $users, function ($user) use ($author) {
+				return $user->ID !== $author;
+			} );
+		}
+
+		// Sanitize the HTML into text
+		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
+		$content = apply_filters( 'bbsub_html_to_text', $content );
+
+		// Build email
+		$text = "%1\$s\n\n";
+		$text .= "---\nReply to this post directly or view it online:\n%2\$s\n\n";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the post to unsubscribe from these emails.";
+		$text = sprintf( $text, $content, get_comment_link( $comment ) );
+		$text = apply_filters( 'bbsub_email_message', $text, $id, $post->ID, $content );
+		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
+
+		$options = array(
+			'id'     => $post->ID,
+			'author' => $reply_author_name,
+		);
+
+		if ( $this->handler->supports_message_ids() ) {
+			$options['in-reply-to'] = $this->get_message_id_for_post( $post );
+			$options['message-id']  = $this->get_message_id_for_comment( $comment );
+		}
+		else {
+			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
+			$options['in-reply-to'] = $message_ids;
+		}
+
+		$this->handler->send_mail( $users, $subject, $text, $options );
+
+		return true;
+	}
+
+	/**
 	 * Get the Message ID for a post
 	 *
 	 * @param WP_Post $post Post object
@@ -128,8 +200,12 @@ class Falcon_Connector_WordPress {
 	 */
 	protected function get_message_id_for_comment( $comment ) {
 		$post = get_post( $comment->comment_post_ID );
+		$type = $comment->comment_type;
+		if ( empty( $type ) ) {
+			$type = 'comment';
+		}
 
-		$left = 'falcon/' . $post->post_type . '/' . $post->ID . '/' . $comment->comment_type . '/' . $comment->comment_ID;
+		$left = 'falcon/' . $post->post_type . '/' . $post->ID . '/' . $type . '/' . $comment->comment_ID;
 		$right = parse_url( home_url(), PHP_URL_HOST );
 
 		$id = sprintf( '<%s@%s>', $left, $right );
@@ -166,6 +242,13 @@ class Falcon_Connector_WordPress {
 		}
 
 		return $recipients;
+	}
+
+	protected function get_comment_subscribers( $comment ) {
+		// Grab subscribers for the post itself
+		$subscribers = array();
+
+		return $subscribers;
 	}
 
 	public function handle_insert( $value, Falcon_Reply $reply ) {
