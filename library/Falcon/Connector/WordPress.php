@@ -75,17 +75,7 @@ class Falcon_Connector_WordPress {
 
 		$message = new Falcon_Message();
 
-		$content = apply_filters( 'the_content', $post->post_content );
-
-		// Sanitize the HTML into text
-		$content = apply_filters( 'bbsub_html_to_text', $content );
-
-		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf( $text, $content, get_permalink( $id ) );
-		$message->set_text( apply_filters( 'bbsub_topic_email_message', $text, $id, $content ) );
+		$message->set_text( $this->get_post_content_as_text( $post ) );
 
 		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . get_the_title( $id ), $id );
 		$message->set_subject( $subject );
@@ -109,6 +99,21 @@ class Falcon_Connector_WordPress {
 
 		// Stop any future double-sends
 		update_post_meta( $id, static::SENT_META_KEY, true );
+	}
+
+	protected function get_post_content_as_text( $post ) {
+		$content = apply_filters( 'the_content', $post->post_content );
+
+		// Sanitize the HTML into text
+		$content = apply_filters( 'bbsub_html_to_text', $content );
+
+		// Build email
+		$text = "%1\$s\n\n";
+		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+		$text = sprintf( $text, $content, get_permalink( $post->ID ) );
+
+		return $text;
 	}
 
 	/**
