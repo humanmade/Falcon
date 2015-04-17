@@ -76,6 +76,7 @@ class Falcon_Connector_WordPress {
 		$message = new Falcon_Message();
 
 		$message->set_text( $this->get_post_content_as_text( $post ) );
+		$message->set_html( $this->get_post_content_as_html( $post ) );
 
 		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . get_the_title( $id ), $id );
 		$message->set_subject( $subject );
@@ -113,6 +114,18 @@ class Falcon_Connector_WordPress {
 		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
 		$text = sprintf( $text, $content, get_permalink( $post->ID ) );
 
+	protected function get_post_content_as_html( $post ) {
+		$content = apply_filters( 'the_content', $post->post_content );
+
+		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
+		$footer .= sprintf(
+			'Reply to this email directly or <a href="%s">view it on %s</a>.',
+			get_permalink( $post->ID ),
+			get_option( 'blogname' )
+		);
+		$footer .= '</p>';
+
+		$text = $content . "\n\n" . $footer;
 		return $text;
 	}
 

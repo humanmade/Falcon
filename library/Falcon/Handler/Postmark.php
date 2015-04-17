@@ -45,9 +45,15 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 				'ReplyTo'  => $message->get_reply_address( $user ),
 				'To'       => $user->user_email,
 				'Subject'  => $message->get_subject(),
-				'TextBody' => $message->get_text(),
 				'Headers'  => array(),
 			);
+
+			if ( $text = $message->get_text() ) {
+				$data['TextBody'] = $text;
+			}
+			if ( $html = $message->get_html() ) {
+				$data['HtmlBody'] = $html;
+			}
 
 			// Set the message ID if we've got one
 			if ( ! empty( $options['message-id'] ) ) {
