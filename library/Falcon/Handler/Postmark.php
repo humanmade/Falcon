@@ -70,6 +70,14 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 				}
 			}
 
+			if ( ! empty( $options['references'] ) ) {
+				$references = implode( ' ', $options['references'] );
+				$data['Headers'][] = array(
+					'Name' => 'References',
+					'Value' => $references,
+				);
+			}
+
 			$messages[ $user->ID ] = $this->send_single($data);
 		}
 

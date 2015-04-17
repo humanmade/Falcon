@@ -160,8 +160,16 @@ class Falcon_Connector_WordPress {
 		);
 
 		if ( $this->handler->supports_message_ids() ) {
-			$options['in-reply-to'] = $this->get_message_id_for_post( $post );
+			$options['references']  = $this->get_references_for_comment( $comment );
 			$options['message-id']  = $this->get_message_id_for_comment( $comment );
+
+			if ( ! empty( $comment->comment_parent ) ) {
+				$parent = get_comment( $comment->comment_parent );
+				$options['in-reply-to'] = $this->get_message_id_for_comment( $parent );
+			}
+			else {
+				$options['in-reply-to'] = $this->get_message_id_for_post( $post );
+			}
 		}
 		else {
 			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
@@ -219,6 +227,31 @@ class Falcon_Connector_WordPress {
 		 * @param stdClass $post Post object
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_message_id', $id, $comment );
+	}
+
+	/**
+	 * Get the References for a comment
+	 *
+	 * @param stdClass $comment Comment object
+	 * @return string Message ID
+	 */
+	protected function get_references_for_comment( $comment ) {
+		$references = array();
+		if ( ! empty( $comment->comment_parent ) ) {
+			// Add parent's references
+			$parent = get_comment( $comment->comment_parent );
+			$references = array_merge( $references, $this->get_references_for_comment( $parent ) );
+
+			// Add reference to the parent itself
+			$references[] = $this->get_message_id_for_comment( $parent );
+		}
+		else {
+			// Parent is a post
+			$parent = get_post( $comment->comment_post_ID );
+			$references[] = $this->get_message_id_for_post( $parent );
+		}
+
+		return $references;
 	}
 
 	protected function get_post_subscribers( WP_Post $post ) {
