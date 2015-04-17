@@ -73,6 +73,8 @@ class Falcon_Connector_WordPress {
 			return;
 		}
 
+		$message = new Falcon_Message();
+
 		$content = apply_filters( 'the_content', $post->post_content );
 
 		// Sanitize the HTML into text
@@ -83,19 +85,24 @@ class Falcon_Connector_WordPress {
 		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
 		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
 		$text = sprintf( $text, $content, get_permalink( $id ) );
-		$text = apply_filters( 'bbsub_topic_email_message', $text, $id, $content );
+		$message->set_text( apply_filters( 'bbsub_topic_email_message', $text, $id, $content ) );
+
 		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . get_the_title( $id ), $id );
+		$message->set_subject( $subject );
 
-		$options = array(
-			'author' => get_the_author_meta( 'display_name', $post->post_author ),
-			'id'     => $id,
-		);
+		$message->set_author( get_the_author_meta( 'display_name', $post->post_author ) );
 
+		$options = array();
 		if ( $this->handler->supports_message_ids() ) {
 			$options['message-id'] = $this->get_message_id_for_post( $post );
 		}
+		$message->set_options( $options );
 
-		$responses = $this->handler->send_mail( $recipients, $subject, $text, $options );
+		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $post ) {
+			return Falcon::get_reply_address( $post->ID, $user );
+		} );
+
+		$responses = $this->handler->send_mail( $recipients, $message );
 		if ( ! $this->handler->supports_message_ids() && ! empty( $responses ) ) {
 			update_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
 		}
@@ -128,8 +135,10 @@ class Falcon_Connector_WordPress {
 			return false;
 		}
 
+		$message = new Falcon_Message();
+
 		// Poster name
-		$reply_author_name = apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author );
+		$message->set_author( apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author ) );
 
 		// Don't send notifications to the person who made the post
 		$send_to_author = get_option('bbsub_send_to_author', false);
@@ -151,13 +160,16 @@ class Falcon_Connector_WordPress {
 		$text .= "---\nReply to this post directly or view it online:\n%2\$s\n\n";
 		$text .= "You are receiving this email because you subscribed to it. Login and visit the post to unsubscribe from these emails.";
 		$text = sprintf( $text, $content, get_comment_link( $comment ) );
-		$text = apply_filters( 'bbsub_email_message', $text, $id, $post->ID, $content );
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
+		$message->set_text( apply_filters( 'bbsub_email_message', $text, $id, $post->ID, $content ) );
 
-		$options = array(
-			'id'     => $post->ID,
-			'author' => $reply_author_name,
-		);
+		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
+		$message->set_subject( $subject );
+
+		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $post ) {
+			return Falcon::get_reply_address( $post->ID, $user );
+		} );
+
+		$options = array();
 
 		if ( $this->handler->supports_message_ids() ) {
 			$options['references']  = $this->get_references_for_comment( $comment );
@@ -176,7 +188,9 @@ class Falcon_Connector_WordPress {
 			$options['in-reply-to'] = $message_ids;
 		}
 
-		$this->handler->send_mail( $users, $subject, $text, $options );
+		$message->set_options( $options );
+
+		$this->handler->send_mail( $users, $message );
 
 		return true;
 	}

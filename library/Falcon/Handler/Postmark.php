@@ -30,21 +30,23 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 		$this->api_key = $options['api_key'];
 	}
 
-	public function send_mail( $users, $subject, $content, $options ) {
+	public function send_mail( $users, Falcon_Message $message ) {
+		$options = $message->get_options();
+
 		$from = Falcon::get_from_address();
-		if ( ! empty( $options['author'] ) ) {
-			$from = sprintf( '%s <%s>', $options['author'], $from );
+		if ( $author = $message->get_author() ) {
+			$from = sprintf( '%s <%s>', $author, $from );
 		}
 
 		$messages = array();
 		foreach ($users as $user) {
 			$data = array(
-				'From' => $from,
-				'ReplyTo' => Falcon::get_reply_address( $options['id'], $user ),
-				'To' => $user->user_email,
-				'Subject' => $subject,
-				'TextBody' => $content,
-				'Headers' => array(),
+				'From'     => $from,
+				'ReplyTo'  => $message->get_reply_address( $user ),
+				'To'       => $user->user_email,
+				'Subject'  => $message->get_subject(),
+				'TextBody' => $message->get_text(),
+				'Headers'  => array(),
 			);
 
 			// Set the message ID if we've got one

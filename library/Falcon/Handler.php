@@ -20,15 +20,10 @@ interface Falcon_Handler {
 	 * Send a message to specified recipients
 	 *
 	 * @param array $users Users to notify
-	 * @param string $subject Message subject
-	 * @param string $text Message text
-	 * @param array $options {
-	 *     @param int $id Post ID to use for hash
-	 *     @param string $author Author name (leave blank for no name)
-	 * }
+	 * @param Falcon_Message $message Message to send
 	 * @return array|null Map of user ID to message ID, or empty if IDs are not available.
 	 */
-	public function send_mail($users, $subject, $text, $options);
+	public function send_mail($users, Falcon_Message $message);
 
 	/**
 	 * Check the inbox for replies
