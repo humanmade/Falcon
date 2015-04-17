@@ -102,6 +102,26 @@ class Falcon_Connector_WordPress {
 		update_post_meta( $id, static::SENT_META_KEY, true );
 	}
 
+	protected function get_text_footer( $url ) {
+		$text = "---\n";
+		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
+		$text .= "\n" . $url;
+
+		return apply_filters( 'falcon.connector.wordpress.text_footer', $text, $url );
+	}
+
+	protected function get_html_footer( $url ) {
+		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
+		$footer .= sprintf(
+			'Reply to this email directly or <a href="%s">view it on %s</a>.',
+			$url,
+			get_option( 'blogname' )
+		);
+		$footer .= '</p>';
+
+		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
+	}
+
 	protected function get_post_content_as_text( $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
@@ -109,10 +129,7 @@ class Falcon_Connector_WordPress {
 		$content = apply_filters( 'bbsub_html_to_text', $content );
 
 		// Build email
-		$text = $content . "\n\n";
-		$text .= "---\n";
-		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
-		$text .= "\n" . get_permalink( $post->ID );
+		$text = $content . "\n\n" . $this->get_text_footer( get_permalink( $post->ID ) );
 
 		/**
 		 * Filter the email content
@@ -128,15 +145,7 @@ class Falcon_Connector_WordPress {
 	protected function get_post_content_as_html( $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
-		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
-		$footer .= sprintf(
-			'Reply to this email directly or <a href="%s">view it on %s</a>.',
-			get_permalink( $post->ID ),
-			get_option( 'blogname' )
-		);
-		$footer .= '</p>';
-
-		$text = $content . "\n\n" . $footer;
+		$text = $content . "\n\n" . $this->get_html_footer( get_permalink( $post->ID ) );
 
 		/**
 		 * Filter the email content
@@ -190,15 +199,8 @@ class Falcon_Connector_WordPress {
 		}
 
 		// Sanitize the HTML into text
-		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
-		$content = apply_filters( 'bbsub_html_to_text', $content );
-
-		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this post directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the post to unsubscribe from these emails.";
-		$text = sprintf( $text, $content, get_comment_link( $comment ) );
-		$message->set_text( apply_filters( 'bbsub_email_message', $text, $id, $post->ID, $content ) );
+		$message->set_text( $this->get_comment_content_as_text( $comment ) );
+		$message->set_html( $this->get_comment_content_as_html( $comment ) );
 
 		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
 		$message->set_subject( $subject );
@@ -231,6 +233,42 @@ class Falcon_Connector_WordPress {
 		$this->handler->send_mail( $users, $message );
 
 		return true;
+	}
+
+	protected function get_comment_content_as_text( $comment ) {
+		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
+
+		// Sanitize the HTML into text
+		$content = apply_filters( 'bbsub_html_to_text', $content );
+
+		// Build email
+		$text = $content . "\n\n" . $this->get_text_footer( get_comment_link( $comment ) );
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to change document formatting, etc
+		 *
+		 * @param string $text Text content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.wordpress.comment_content_text', $text, $comment );
+	}
+
+	protected function get_comment_content_as_html( $comment ) {
+		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
+
+		$text = $content . "\n\n" . $this->get_html_footer( get_comment_link( $comment ) );
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to add tracking codes, metadata, etc
+		 *
+		 * @param string $text HTML content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.wordpress.comment_content_html', $text, $comment );
 	}
 
 	/**
