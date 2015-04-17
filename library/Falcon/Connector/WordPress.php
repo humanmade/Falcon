@@ -109,10 +109,21 @@ class Falcon_Connector_WordPress {
 		$content = apply_filters( 'bbsub_html_to_text', $content );
 
 		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf( $text, $content, get_permalink( $post->ID ) );
+		$text = $content . "\n\n";
+		$text .= "---\n";
+		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
+		$text .= "\n" . get_permalink( $post->ID );
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to change document formatting, etc
+		 *
+		 * @param string $text Text content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.wordpress.post_content_text', $text, $post );
+	}
 
 	protected function get_post_content_as_html( $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
@@ -126,7 +137,16 @@ class Falcon_Connector_WordPress {
 		$footer .= '</p>';
 
 		$text = $content . "\n\n" . $footer;
-		return $text;
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to add tracking codes, metadata, etc
+		 *
+		 * @param string $text HTML content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.wordpress.post_content_html', $text, $post );
 	}
 
 	/**
