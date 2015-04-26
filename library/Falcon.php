@@ -118,6 +118,13 @@ class Falcon extends Falcon_Autohooker {
 			throw new Exception(__('Invalid reply-to address', 'bbsub'));
 		}
 
+		// Append the plus address if it's not already there
+		if ( strpos( $address, '+' ) === false) {
+			list( $user_part, $host_part ) = explode( '@', $address );
+			$user_part .= '+%1$s-%2$s';
+			$address = $user_part . '@' . $host_part;
+		}
+
 		return sprintf($address, $post_id, self::get_hash($post_id, $user));
 	}
 

@@ -234,7 +234,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 
 		echo '<input type="text" name="bbsub_replyto" class="regular-text" value="' . esc_attr($current) . '" />';
 		echo '<p class="description">';
-		_e('This is in the form <code>reply+%1$d-%2$s@example.com</code> where <code>%1$d</code> is replaced with the topic ID and <code>%2$s</code> is replaced with an authentication token.', 'falcon');
+		_e('Falcon will append an authentication token to this email before sending.', 'falcon');
 		echo '</p>';
 	}
 
@@ -248,19 +248,17 @@ class Falcon_Admin extends Falcon_Autohooker {
 	public static function validate_replyto($input) {
 		$oldvalue = get_option('bbsub_replyto', '');
 
-		// Check that our tokens are in the string
-		if (strpos($input, '%1$d') === false || strpos($input, '%2$s') === false) {
-			add_settings_error(
-				'bbsub_replyto',
-				'bbsub_replyto_notokens',
-				__('The <code>%1$d</code> and <code>%2$s</code> tokens must be in the reply-to address', 'falcon')
-			);
-			return $oldvalue;
+		// Append the plus address if it's not already there
+		$address = $input;
+		if ( strpos( $address, '+' ) === false) {
+			list( $user_part, $host_part ) = explode( '@', $address );
+			$user_part .= '+%1$s-%2$s';
+			$address = $user_part . '@' . $host_part;
 		}
 
 		// Test it out!
 		$hmac = hash_hmac('sha1', '5|1', 'bbsub_reply_by_email');
-		$formatted = sprintf($input, 5, $hmac);
+		$formatted = sprintf($address, 5, $hmac);
 
 		// Check that the resulting email is valid
 		if (!is_email($formatted)) {
