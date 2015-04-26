@@ -24,6 +24,7 @@ add_action( 'plugins_loaded', 'falcon_load' );
 
 function falcon_load() {
 	define( 'FALCON_PATH', __DIR__ );
+	define( 'FALCON_PLUGIN', plugin_basename( __FILE__ ) );
 	spl_autoload_register( 'falcon_autoload' );
 	Falcon::bootstrap();
 }
