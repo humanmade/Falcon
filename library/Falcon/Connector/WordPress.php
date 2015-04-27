@@ -736,7 +736,7 @@ class Falcon_Connector_WordPress {
 		$short_names = $this->get_available_settings_short();
 
 		?>
-		<table class="form-table falcon-grid">
+		<table class="widefat falcon-grid">
 			<thead>
 				<tr>
 					<th></th>

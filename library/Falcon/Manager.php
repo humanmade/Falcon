@@ -46,7 +46,11 @@ class Falcon_Manager extends Falcon_Autohooker {
 				.falcon-grid tbody td {
 					text-align: center;
 				}
-				.falcon-grid thead tr {
+				.falcon-grid thead th {
+					font-weight: bold;
+				}
+				.falcon-grid thead th,
+				.falcon-grid thead td {
 					border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 				}
 
@@ -54,6 +58,10 @@ class Falcon_Manager extends Falcon_Autohooker {
 					font-weight: normal;
 					font-size: 13px;
 					color: #aaa;
+				}
+				.falcon-grid tbody th,
+				.falcon-grid tbody td {
+					border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 				}
 			</style>
 			<?php
