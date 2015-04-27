@@ -126,10 +126,10 @@ class Falcon extends Falcon_Autohooker {
 		}
 
 		list( $user_part, $host_part ) = explode( '@', $address );
-		$user_part .= '+%1$s-%2$d-%3$s';
+		$user_part .= '+%1$s-%2$d-%3$d-%4$s';
 		$address = $user_part . '@' . $host_part;
 
-		return sprintf($address, $post_id, $site_id, self::get_hash($post_id, $user, $site_id));
+		return sprintf($address, $post_id, $site_id, $user->ID, self::get_hash($post_id, $user, $site_id));
 	}
 
 	/**

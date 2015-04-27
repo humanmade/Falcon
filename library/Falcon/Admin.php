@@ -337,7 +337,6 @@ class Falcon_Admin extends Falcon_Autohooker {
 	public static function validate_replyto($input) {
 		$oldvalue = Falcon::get_option('bbsub_replyto', '');
 
-		// Append the plus address if it's not already there
 		if ( strpos( $input, '+' ) !== false) {
 			add_settings_error(
 				'bbsub_replyto',
@@ -348,12 +347,12 @@ class Falcon_Admin extends Falcon_Autohooker {
 		}
 
 		list( $user_part, $host_part ) = explode( '@', $input );
-		$user_part .= '+%1$s-%2$d-%3$s';
+		$user_part .= '+%1$s-%2$d-%3$d-%4$s';
 		$address = $user_part . '@' . $host_part;
 
 		// Test it out!
-		$hash = Falcon::get_hash('5', '1', '42');
-		$formatted = sprintf($address, 5, 42, $hmac);
+		$hash = Falcon::get_hash('5', wp_get_current_user(), '42');
+		$formatted = sprintf($address, 5, 42, wp_get_current_user()->ID, $hmac);
 
 		// Check that the resulting email is valid
 		if (!is_email($formatted)) {

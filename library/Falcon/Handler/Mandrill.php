@@ -57,18 +57,17 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 	 */
 	public function handle_post() {
 		if ( isset( $_POST['mandrill_events'] ) ) {
-			$parsed = reset( json_decode( stripslashes( $_POST['mandrill_events'] ) ) );
+			$parsed = reset( json_decode( wp_unslash( $_POST['mandrill_events'] ) ) );
 
 			if ( !$parsed ) {
 				return;
 			}
 
 			$reply = new Falcon_Reply();
-			$reply->from = $parsed->msg->from_email;
 			$reply->subject = $parsed->msg->subject;
 			$reply->body = $parsed->msg->text;
 
-			list($reply->post, $reply->site, $reply->nonce) = Falcon_Reply::parse_to( $parsed->msg->email );
+			list($reply->post, $reply->site, $reply->user, $reply->nonce) = Falcon_Reply::parse_to( $parsed->msg->email );
 
 			$reply_id = $reply->insert();
 

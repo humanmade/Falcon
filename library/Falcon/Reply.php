@@ -50,7 +50,7 @@ class Falcon_Reply {
 	}
 
 	public function get_user() {
-		return get_user_by( 'email', $this->from );
+		return get_user_by( 'id', $this->user );
 	}
 
 	public function is_valid() {
@@ -77,10 +77,10 @@ class Falcon_Reply {
 		$template = Falcon::get_option('bbsub_replyto');
 
 		// No plus address in saved, parse via splitting
-		$has_match = preg_match( '/\+(\w+)-(\d+)-(\w+)\@.*/i', $address, $matches );
+		$has_match = preg_match( '/\+(\w+)-(\d+)-(\d+)-(\w+)\@.*/i', $address, $matches );
 		if ( ! $has_match ) {
 			throw new Exception(__('Reply-to not formatted correctly', 'bbsub'));
 		}
-		return array( $matches[1], $matches[2], $matches[3] );
+		return array( $matches[1], $matches[2], $matches[3], $matches[4] );
 	}
 }
