@@ -8,6 +8,7 @@ class Falcon_Reply {
 	public $body;
 	public $nonce;
 	public $post;
+	public $site;
 
 	public function __construct() {
 	}
@@ -55,21 +56,31 @@ class Falcon_Reply {
 	public function is_valid() {
 		$user = $this->get_user();
 
-		return $this->nonce === Falcon::get_hash($this->post, $user);
+		return $this->nonce === Falcon::get_hash($this->post, $user, $this->site);
 	}
 
 	public function insert() {
-		return apply_filters( 'falcon.reply.insert', null, $this );
+		if ( is_multisite() ) {
+			switch_to_blog( $this->site );
+		}
+
+		$result = apply_filters( 'falcon.reply.insert', null, $this );
+
+		if ( is_multisite() ) {
+			restore_current_blog();
+		}
+
+		return $result;
 	}
 
 	public static function parse_to($address) {
 		$template = Falcon::get_option('bbsub_replyto');
 
 		// No plus address in saved, parse via splitting
-		$has_match = preg_match( '/\+(\w+)-(\w+)\@.*/i', $address, $matches );
+		$has_match = preg_match( '/\+(\w+)-(\d+)-(\w+)\@.*/i', $address, $matches );
 		if ( ! $has_match ) {
 			throw new Exception(__('Reply-to not formatted correctly', 'bbsub'));
 		}
-		return array( $matches[1], $matches[2] );
+		return array( $matches[1], $matches[2], $matches[3] );
 	}
 }

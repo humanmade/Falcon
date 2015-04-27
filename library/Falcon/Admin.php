@@ -348,12 +348,12 @@ class Falcon_Admin extends Falcon_Autohooker {
 		}
 
 		list( $user_part, $host_part ) = explode( '@', $input );
-		$user_part .= '+%1$s-%2$s';
+		$user_part .= '+%1$s-%2$d-%3$s';
 		$address = $user_part . '@' . $host_part;
 
 		// Test it out!
-		$hmac = hash_hmac('sha1', '5|1', 'bbsub_reply_by_email');
-		$formatted = sprintf($address, 5, $hmac);
+		$hash = Falcon::get_hash('5', '1', '42');
+		$formatted = sprintf($address, 5, 42, $hmac);
 
 		// Check that the resulting email is valid
 		if (!is_email($formatted)) {

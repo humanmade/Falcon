@@ -110,7 +110,11 @@ class Falcon extends Falcon_Autohooker {
 	 * @param WP_User $user User object
 	 * @return string Full email address
 	 */
-	public static function get_reply_address($post_id, $user) {
+	public static function get_reply_address($post_id, $user, $site_id = null) {
+		if ( ! $site_id ) {
+			$site_id = get_current_blog_id();
+		}
+
 		$address = self::get_option('bbsub_replyto', false);
 		if (empty($address)) {
 			throw new Exception(__('Invalid reply-to address', 'bbsub'));
@@ -122,10 +126,10 @@ class Falcon extends Falcon_Autohooker {
 		}
 
 		list( $user_part, $host_part ) = explode( '@', $address );
-		$user_part .= '+%1$s-%2$s';
+		$user_part .= '+%1$s-%2$d-%3$s';
 		$address = $user_part . '@' . $host_part;
 
-		return sprintf($address, $post_id, self::get_hash($post_id, $user));
+		return sprintf($address, $post_id, $site_id, self::get_hash($post_id, $user, $site_id));
 	}
 
 	/**
@@ -139,8 +143,8 @@ class Falcon extends Falcon_Autohooker {
 	 * @param WP_User $user User object
 	 * @return string Verification hash (10 characters long)
 	 */
-	public static function get_hash($post_id, $user) {
-		return hash_hmac('sha1', $post_id . '|' . $user->ID, 'bbsub_reply_by_email');
+	public static function get_hash($post_id, $user, $site_id) {
+		return hash_hmac('sha1', $post_id . '|' . $site_id . '|' . $user->ID, 'bbsub_reply_by_email');
 	}
 
 	/**

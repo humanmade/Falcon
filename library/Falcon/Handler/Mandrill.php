@@ -68,7 +68,7 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 			$reply->subject = $parsed->msg->subject;
 			$reply->body = $parsed->msg->text;
 
-			list($reply->post, $reply->nonce) = Falcon_Reply::parse_to( $parsed->msg->email );
+			list($reply->post, $reply->site, $reply->nonce) = Falcon_Reply::parse_to( $parsed->msg->email );
 
 			$reply_id = $reply->insert();
 
