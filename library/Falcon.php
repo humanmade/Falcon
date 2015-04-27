@@ -52,7 +52,7 @@ class Falcon extends Falcon_Autohooker {
 	 */
 	public static function get_handler_class($type = null) {
 		if (!$type) {
-			$type = get_option('bbsub_handler_type', false);
+			$type = self::get_option('bbsub_handler_type', false);
 		}
 
 		$handlers = self::get_handlers();
@@ -72,8 +72,8 @@ class Falcon extends Falcon_Autohooker {
 	 * @return bbSubscriptions_Handler
 	 */
 	protected static function get_handler() {
-		$type = get_option('bbsub_handler_type', 'postmark');
-		$options = get_option('bbsub_handler_options', array());
+		$type = self::get_option('bbsub_handler_type', 'postmark');
+		$options = self::get_option('bbsub_handler_options', array());
 
 		// Get the appropriate handler
 		$handler = self::get_handler_class($type);
@@ -88,8 +88,6 @@ class Falcon extends Falcon_Autohooker {
 	 * @return array
 	 */
 	protected static function get_available_connectors() {
-		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-
 		$connectors = array(
 			'wordpress' => 'Falcon_Connector_WordPress'
 		);
@@ -113,7 +111,7 @@ class Falcon extends Falcon_Autohooker {
 	 * @return string Full email address
 	 */
 	public static function get_reply_address($post_id, $user) {
-		$address = get_option('bbsub_replyto', false);
+		$address = self::get_option('bbsub_replyto', false);
 		if (empty($address)) {
 			throw new Exception(__('Invalid reply-to address', 'bbsub'));
 		}
@@ -150,7 +148,7 @@ class Falcon extends Falcon_Autohooker {
 	 * @return string Full email address
 	 */
 	public static function get_from_address() {
-		$address = get_option('bbsub_from_email', false);
+		$address = self::get_option('bbsub_from_email', false);
 		if (empty($address)) {
 			// Get the site domain and get rid of www.
 			$sitename = strtolower( $_SERVER['SERVER_NAME'] );
@@ -233,5 +231,27 @@ class Falcon extends Falcon_Autohooker {
 	public static function convert_html_to_text($html) {
 		$converter = new Falcon_Converter($html);
 		return $converter->convert();
+	}
+
+	/**
+	 * Is Falcon in network mode?
+	 *
+	 * Network mode is used when Falcon is network-activated, and moves some
+	 * of the settings to the network admin for super admins instead. It also
+	 * adds UI to allow enabling per-site.
+	 *
+	 * @return boolean
+	 */
+	public static function is_network_mode() {
+		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+		return is_multisite() && is_plugin_active_for_network( FALCON_PLUGIN );
+	}
+
+	public static function get_option( $key, $default = false ) {
+		if ( self::is_network_mode() ) {
+			return get_site_option( $key, $default );
+		}
+
+		return get_option( $key, $default );
 	}
 }

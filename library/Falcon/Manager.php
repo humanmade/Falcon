@@ -8,9 +8,9 @@ class Falcon_Manager extends Falcon_Autohooker {
 		self::register_hooks();
 	}
 
-	public static function key_for_setting( $connector, $key ) {
+	public static function key_for_setting( $connector, $key, $site_id = null ) {
 		if ( is_multisite() ) {
-			$site_id = get_current_blog_id();
+			$site_id = $site_id ? $site_id : get_current_blog_id();
 			return sprintf( 'falcon.site_%d.%s.%s', $site_id, $connector, $key );
 		}
 
@@ -24,16 +24,34 @@ class Falcon_Manager extends Falcon_Autohooker {
 	public static function user_profile_fields( $user_id ) {
 		echo '<h3>' . esc_html__( 'Notification Settings', 'falcon' ) . '</h3>';
 
-		if ( is_multisite() && is_plugin_active_for_network( FALCON_PLUGIN ) ) {
+		if ( Falcon::is_network_mode() ) {
 			// On multisite, we want to output a table of all
 			// notification settings
-			$sites = wp_get_sites( array(
-				'archived' => false,
-				'deleted' => false,
-				'spam' => false,
-			) );
+			$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
 
+			echo '<p class="description">' . esc_html__( 'Set your email notification settings for the following sites.', 'falcon' ) . '</p>';
 			do_action( 'falcon.manager.network_profile_fields', $user_id, $sites );
+
+			?>
+			<style>
+				.falcon-grid .last_of_col {
+					border-right: 2px solid rgba(0, 0, 0, 0.2);
+				}
+				.falcon-grid .last_of_col:last-child {
+					border-right: none;
+				}
+
+				.falcon-grid thead th,
+				.falcon-grid thead td,
+				.falcon-grid tbody td {
+					text-align: center;
+				}
+				.falcon-grid thead tr {
+					border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+				}
+			</style>
+			<?php
+
 		}
 		else {
 			?>
@@ -58,7 +76,13 @@ class Falcon_Manager extends Falcon_Autohooker {
 		}
 
 		$args = wp_unslash( $_POST );
-		do_action( 'falcon.manager.save_profile_fields', $user_id, $args );
+		if ( Falcon::is_network_mode() ) {
+			$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
+			do_action( 'falcon.manager.save_network_profile_fields', $user_id, $args, $sites );
+		}
+		else {
+			do_action( 'falcon.manager.save_profile_fields', $user_id, $args );
+		}
 	}
 
 	/**
@@ -77,7 +101,21 @@ class Falcon_Manager extends Falcon_Autohooker {
 		<?php
 	}
 
+	protected static function available_sites() {
+		$sites = wp_get_sites( array(
+			'archived' => false,
+			'deleted' => false,
+			'spam' => false,
+		) );
+
+		return apply_filters( 'falcon.manager.available_sites', $sites );
+	}
+
 	public static function register_default_settings() {
+		if ( Falcon::is_network_mode() ) {
+			self::register_network_settings();
+		}
+
 		add_settings_section( 'bbsub_options_notifications', 'Default Notification Settings', array( get_class(), 'output_default_settings_header' ), 'bbsub_options' );
 
 		$connectors = Falcon::get_connectors();
@@ -169,5 +207,44 @@ class Falcon_Manager extends Falcon_Autohooker {
 			__('The notification option is invalid', 'falcon')
 		);
 		return false;
+	}
+
+	public static function register_network_settings() {
+		register_setting( 'bbsub_options', 'falcon_enabled_sites', array(__CLASS__, 'validate_sites') );
+		add_settings_field( 'bbsub_options_sites', 'Active Sites', array( __CLASS__, 'settings_field_sites' ), 'bbsub_options', 'bbsub_options_global' );
+	}
+
+	public static function settings_field_sites() {
+		$sites = self::available_sites();
+		$current = Falcon::get_option( 'falcon_enabled_sites', array() );
+
+		foreach ( $sites as $site ) {
+			$details = get_blog_details( $site['blog_id'] );
+			$value = absint( $site['blog_id'] );
+			$enabled = in_array( $value, $current );
+
+			printf(
+				'<label><input type="checkbox" name="%s[]" value="%s" %s /> %s</label><br />',
+				'falcon_enabled_sites',
+				esc_attr( $value ),
+				checked( $enabled, true, false ),
+				esc_html( $details->blogname )
+			);
+
+		}
+
+		echo '<p class="description">' . esc_html__( 'Select which sites to activate Falcon on.', 'falcon' ) . '</p>';
+	}
+
+	public static function validate_sites( $value ) {
+		$value = (array) $value;
+
+		$sites = self::available_sites();
+		$site_ids = wp_list_pluck( $sites, 'blog_id' );
+
+		// Ensure all values are available
+		$sanitized = array_values( array_intersect( $value, $site_ids ) );
+		$sanitized = array_map( 'absint', $sanitized );
+		return $sanitized;
 	}
 }

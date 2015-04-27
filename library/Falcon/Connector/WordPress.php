@@ -23,6 +23,7 @@ class Falcon_Connector_WordPress {
 		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
 		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
 		add_action( 'falcon.manager.network_profile_fields', array( $this, 'network_notification_settings' ), 10, 2 );
+		add_action( 'falcon.manager.save_network_profile_fields', array( $this, 'save_profile_settings' ), 10, 3 );
 	}
 
 	/**
@@ -201,7 +202,7 @@ class Falcon_Connector_WordPress {
 		$message->set_author( apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author ) );
 
 		// Don't send notifications to the person who made the post
-		$send_to_author = get_option('bbsub_send_to_author', false);
+		$send_to_author = Falcon::get_option('bbsub_send_to_author', false);
 
 		if ( ! $send_to_author && ! empty( $comment->user_id ) ) {
 			$author = (int) $comment->user_id;
@@ -579,6 +580,22 @@ class Falcon_Connector_WordPress {
 		);
 	}
 
+	public function get_available_settings_short() {
+		return array(
+			'post' => array(
+				'all' => __( 'All', 'falcon' ),
+				''    => __( 'None', 'falcon' ),
+			),
+
+			'comment' => array(
+				'all'         => __( 'All', 'falcon' ),
+				'participant' => __( "Participant", 'falcon' ),
+				'replies'     => __( 'Replies', 'falcon' ),
+				''            => __( 'None', 'falcon' )
+			),
+		);
+	}
+
 	/**
 	 * Get default notification settings
 	 *
@@ -593,7 +610,7 @@ class Falcon_Connector_WordPress {
 
 		foreach ( $keys as $key => $hardcoded_default ) {
 			$option_key = $this->key_for_setting( 'notifications.' . $key );
-			$value = get_option( $option_key, null );
+			$value = Falcon::get_option( $option_key, null );
 
 			$defaults[ $key ] = isset( $value ) ? $value : $hardcoded_default;
 		}
@@ -607,12 +624,12 @@ class Falcon_Connector_WordPress {
 	 * @param int $user_id User to get settings for
 	 * @return array Map of type => pref value
 	 */
-	protected function get_settings_for_user( $user_id ) {
+	protected function get_settings_for_user( $user_id, $site_id = null ) {
 		$available = $this->get_available_settings();
 		$settings = array();
 
 		foreach ( $available as $type => $choices ) {
-			$key = $this->key_for_setting( 'notifications.' . $type );
+			$key = $this->key_for_setting( 'notifications.' . $type, $site_id );
 			$value = get_user_meta( $user_id, $key );
 			if ( empty( $value ) ) {
 				continue;
@@ -624,8 +641,8 @@ class Falcon_Connector_WordPress {
 		return $settings;
 	}
 
-	protected function key_for_setting( $key ) {
-		return Falcon_Manager::key_for_setting( 'wordpress', $key );
+	protected function key_for_setting( $key, $site_id = null ) {
+		return Falcon_Manager::key_for_setting( 'wordpress', $key, $site_id );
 	}
 
 	protected function print_field( $field, $settings, $is_defaults_screen = false ) {
@@ -676,81 +693,101 @@ class Falcon_Connector_WordPress {
 		<?php
 	}
 
-	public function save_profile_settings( $user_id, $args = array() ) {
+	public function save_profile_settings( $user_id, $args = array(), $sites = null ) {
 		$available = $this->get_available_settings();
+
+		if ( $sites === null ) {
+			$sites = array( get_current_blog_id() );
+		}
 
 		foreach ( $available as $type => $options ) {
-			$key = $this->key_for_setting( 'notifications.' . $type );
+			foreach ( $sites as $site ) {
+				$key = $this->key_for_setting( 'notifications.' . $type, $site );
 
-			// PHP strips '.' out of POST data as a relic from the
-			// register_globals days, so we need to take that into account
-			$request_key = str_replace( '.', '_', $key );
-			if ( ! isset( $args[ $request_key ] ) ) {
-				continue;
-			}
-			$value = $args[ $request_key ];
+				// PHP strips '.' out of POST data as a relic from the
+				// register_globals days, so we need to take that into account
+				$request_key = str_replace( '.', '_', $key );
+				if ( ! isset( $args[ $request_key ] ) ) {
+					continue;
+				}
+				$value = $args[ $request_key ];
 
-			// Check the value is valid
-			$options = array_keys( $options );
-			if ( ! in_array( $value, $options ) ) {
-				continue;
-			}
+				// Check the value is valid
+				$options = array_keys( $options );
+				if ( ! in_array( $value, $options ) ) {
+					continue;
+				}
 
-			// Actually set it!
-			if ( ! update_user_meta( $user_id, wp_slash( $key ), wp_slash( $value ) ) ) {
-				// TODO: Log this?
-				continue;
+				// Actually set it!
+				if ( ! update_user_meta( $user_id, wp_slash( $key ), wp_slash( $value ) ) ) {
+					// TODO: Log this?
+					continue;
+				}
 			}
 		}
+		exit;
 	}
 
-	public function network_notification_settings( $user_id = null, $sites ) {
+	public function network_notification_settings( $user = null, $sites ) {
 		// Are we on the notification defaults screen?
-		$is_defaults_screen = empty( $user_id );
-
-		// Grab defaults and currently set
-		$settings = $is_defaults_screen ? $defaults : $this->get_settings_for_user( $user_id );
+		$is_defaults_screen = empty( $user );
 
 		$available = $this->get_available_settings();
+		$short_names = $this->get_available_settings_short();
 
 		?>
-		<table class="form-table">
-			<colgroup>
-				<col />
-				<col span="<?php echo esc_attr( count( $available['post'] ) ) ?>" style="border-right: 10px solid blue" />
-				<col span="<?php echo esc_attr( count( $available['comment'] ) ) ?>" />
-			</colgroup>
-
+		<table class="form-table falcon-grid">
 			<thead>
 				<tr>
-					<th rowspan="2"></th>
-					<th colspan="<?php echo esc_attr( count( $available['post'] ) ) ?>"><?php
+					<th></th>
+					<th colspan="<?php echo esc_attr( count( $available['post'] ) ) ?>"
+						class="last_of_col"><?php
 						esc_html_e( 'Posts', 'falcon' ) ?></th>
 					<th colspan="<?php echo esc_attr( count( $available['comment'] ) ) ?>"><?php
 						esc_html_e( 'Comments', 'falcon' ) ?></th>
 				</tr>
 				<tr>
-					<?php foreach ( $available['post'] as $key => $title ): ?>
-						<td><abbr title="<?php echo esc_attr( $title ) ?>"><?php echo esc_html( $title ) ?></abbr></td>
-					<?php endforeach ?>
+					<th></th>
+					<?php
+					foreach ( $available as $type => $opts ) {
+						$last = key( array_slice( $opts, -1, 1, true ) );
 
-					<?php foreach ( $available['comment'] as $key => $title ): ?>
-						<td><abbr title="<?php echo esc_attr( $title ) ?>"><?php echo esc_html( $title ) ?></abbr></td>
-					<?php endforeach ?>
+						foreach ( $opts as $key => $title ) {
+							printf(
+								'<td class="%s"><abbr title="%s">%s</abbr></td>',
+								( $key === $last ? 'last_of_col' : '' ),
+								esc_attr( $title ),
+								esc_html( $short_names[ $type ][ $key ] )
+							);
+						}
+					}
+					?>
 				</tr>
 			</thead>
 
-			<?php foreach ( $sites as $site ): $details = get_blog_details( $site ); ?>
+			<?php
+			foreach ( $sites as $site ):
+				$details = get_blog_details( $site );
+				$settings = $this->get_settings_for_user( $user->ID, $site );
+				?>
 				<tr>
 					<th scope="row"><?php echo esc_html( $details->blogname ) ?></th>
 
-					<?php foreach ( $available['post'] as $key => $title ): ?>
-						<td><input type="radio" name="<?php echo esc_attr( $key ) ?>" /></td>
-					<?php endforeach ?>
+					<?php
+					foreach ( $available as $type => $opts ) {
+						$current = $settings[ $type ];
+						$name = $this->key_for_setting( 'notifications.' . $type, $site );
 
-					<?php foreach ( $available['comment'] as $key => $title ): ?>
-						<td><input type="radio" name="<?php echo esc_attr( $key ) ?>" /></td>
-					<?php endforeach ?>
+						foreach ( $opts as $key => $title ) {
+							printf(
+								'<td><input type="radio" name="%s" value="%s" %s /></td>',
+								esc_attr( $name ),
+								esc_attr( $key ),
+								checked( $key, $current, false )
+							);
+						}
+					}
+					?>
 				</tr>
 			<?php endforeach ?>
 		</table>

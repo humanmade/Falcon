@@ -64,19 +64,30 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * Add our menu item
 	 *
 	 * @wp-action admin_menu
+	 * @wp-action network_admin_menu
 	 */
 	public static function register_menu() {
-		add_options_page(_x('Falcon', 'page title', 'falcon'), _x('Falcon', 'menu title', 'falcon'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
+		if ( Falcon::is_network_mode() ) {
+			$parent = 'settings.php';
+		}
+		else {
+			$parent = 'options-general.php';
+		}
+		add_submenu_page( $parent, _x('Falcon', 'page title', 'falcon'), _x('Falcon', 'menu title', 'falcon'), 'manage_options', 'bbsub_options', array(__CLASS__, 'admin_page'));
 	}
 
 	/**
 	 * Print the content
 	 */
 	public static function admin_page() {
+		$action = 'options.php';
+		if ( Falcon::is_network_mode() ) {
+			$action = 'settings.php?page=bbsub_options';
+		}
 	?>
 		<div class="wrap">
 			<h2><?php _e('Falcon Options', 'falcon') ?></h2>
-			<form method="post" action="options.php">
+			<form method="post" action="<?php echo esc_attr( $action ) ?>">
 				<?php settings_fields('bbsub_options') ?>
 				<?php do_settings_sections('bbsub_options') ?>
 				<?php submit_button() ?>
@@ -127,6 +138,77 @@ class Falcon_Admin extends Falcon_Autohooker {
 	}
 
 	/**
+	 * Handle option saving in the network admin
+	 *
+	 * Alas, the network admin doesn't include an options handler, so we need
+	 * to use our own here isntead.
+	 *
+	 * @wp-action load-settings_page_bbsub_options
+	 */
+	public static function handle_save_on_network() {
+		if ( ! Falcon::is_network_mode() ) {
+			return;
+		}
+
+		if ( empty( $_POST ) || empty( $_REQUEST['action'] ) || $_REQUEST['action'] !== 'update' ) {
+			return;
+		}
+
+		$option_page = 'bbsub_options';
+		$capability = apply_filters( "option_page_capability_{$option_page}", 'manage_network_options' );
+
+		if ( !current_user_can( $capability ) )
+			wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
+
+		check_admin_referer( $option_page . '-options' );
+
+		$whitelist_options = apply_filters( 'whitelist_options', array() );
+		if ( !isset( $whitelist_options[ $option_page ] ) )
+			wp_die( __( '<strong>ERROR</strong>: options page not found.' ) );
+
+		$options = $whitelist_options[ $option_page ];
+
+		foreach ( $options as $option ) {
+			if ( $unregistered )
+				_deprecated_argument( 'options.php', '2.7', sprintf( __( 'The <code>%1$s</code> setting is unregistered. Unregistered settings are deprecated. See http://codex.wordpress.org/Settings_API' ), $option, $option_page ) );
+
+			$option = trim( $option );
+			$value = null;
+			if ( isset( $_POST[ $option ] ) ) {
+				$value = $_POST[ $option ];
+				if ( ! is_array( $value ) )
+					$value = trim( $value );
+				$value = wp_unslash( $value );
+			}
+			update_site_option( $option, $value );
+		}
+
+		/**
+		 * Handle settings errors and return to options page
+		 */
+		// If no settings errors were registered add a general 'updated' message.
+		if ( !count( get_settings_errors() ) )
+			add_settings_error('general', 'settings_updated', __('Settings saved.'), 'updated');
+		set_transient('settings_errors', get_settings_errors(), 30);
+
+		/**
+		 * Redirect back to the settings page that was submitted
+		 */
+		$goback = add_query_arg( 'settings-updated', 'true',  wp_get_referer() );
+		wp_redirect( $goback );
+		exit;
+	}
+
+	/**
+	 * @wp-action network_admin_notices
+	 */
+	public static function network_settings_errors() {
+		if ( $GLOBALS['plugin_page'] === 'bbsub_options' ) {
+			require(ABSPATH . 'wp-admin/options-head.php');
+		}
+	}
+
+	/**
 	 * Handle an AJAX request for the handler section
 	 *
 	 * @wp-action wp_ajax_bbsub_handler_section
@@ -143,7 +225,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 				throw new Exception(__('Invalid handler', 'falcon'));
 			}
 
-			$options = get_option('bbsub_handler_options', array());
+			$options = Falcon::get_option('bbsub_handler_options', array());
 			// validate_type() will set this flag if the type isn't equal to
 			// the current one
 			if (self::$wipe_handler_options) {
@@ -193,7 +275,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_field_type() {
-		$current = get_option('bbsub_handler_type', false);
+		$current = Falcon::get_option('bbsub_handler_type', false);
 		$available = Falcon::get_handlers();
 
 		if (empty($available)) {
@@ -217,7 +299,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 */
 	public static function validate_type($input) {
 		if ( in_array( $input, array_keys(Falcon::get_handlers()) ) ) {
-			if ($input !== get_option('bbsub_handler_type', false) && empty($_POST['bbsub_used_ajax'])) {
+			if ($input !== Falcon::get_option('bbsub_handler_type', false) && empty($_POST['bbsub_used_ajax'])) {
 				self::$wipe_handler_options = true;
 			}
 			return $input;
@@ -237,7 +319,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_field_replyto() {
-		$current = get_option('bbsub_replyto', '');
+		$current = Falcon::get_option('bbsub_replyto', '');
 
 		echo '<input type="text" name="bbsub_replyto" class="regular-text" value="' . esc_attr($current) . '" />';
 		echo '<p class="description">';
@@ -253,7 +335,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @return string Updated reply-to address if valid, otherwise the old address
 	 */
 	public static function validate_replyto($input) {
-		$oldvalue = get_option('bbsub_replyto', '');
+		$oldvalue = Falcon::get_option('bbsub_replyto', '');
 
 		// Append the plus address if it's not already there
 		$address = $input;
@@ -286,7 +368,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_field_send_to_author() {
-		$current = get_option('bbsub_send_to_author', '');
+		$current = Falcon::get_option('bbsub_send_to_author', '');
 
 		echo '<label><input type="checkbox" name="bbsub_send_to_author" ' . checked($current, true, false) . ' /> ';
 		_e('Send a notification to the reply author', 'falcon');
@@ -309,7 +391,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @see self::init()
 	 */
 	public static function settings_field_from() {
-		$current = get_option('bbsub_from_email', '');
+		$current = Falcon::get_option('bbsub_from_email', '');
 
 		echo '<input type="email" name="bbsub_from_email" class="regular-text" value="' . esc_attr($current) . '" />';
 		echo '<p class="description">' . __('Leave blank to use the default email address (<code>wordpress@</code>)', 'falcon') . '</p>';
@@ -323,7 +405,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @return string Updated reply-to address if valid, otherwise the old address
 	 */
 	public static function validate_from_email($input) {
-		$oldvalue = get_option('bbsub_from_email', '');
+		$oldvalue = Falcon::get_option('bbsub_from_email', '');
 
 		// Check that the resulting email is valid
 		if (!is_email($input)) {
@@ -377,7 +459,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 */
 	public static function register_handler_settings_fields($group, $section, $handler_type = null, $current = null) {
 		if ($current === null) {
-			$current = get_option('bbsub_handler_options', array());
+			$current = Falcon::get_option('bbsub_handler_options', array());
 		}
 		try {
 			$handler = Falcon::get_handler_class($handler_type);

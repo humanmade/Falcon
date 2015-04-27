@@ -63,7 +63,7 @@ class Falcon_Reply {
 	}
 
 	public static function parse_to($address) {
-		$template = get_option('bbsub_replyto');
+		$template = Falcon::get_option('bbsub_replyto');
 
 		// Hack to make ungreedy
 		$template = str_replace('%2$s', '%2$[a-zA-Z0-9]', $template);
