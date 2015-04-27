@@ -15,39 +15,119 @@
  * @subpackage Handlers
  */
 class Falcon_Handler_Mandrill implements Falcon_Handler {
-	public function __construct( $options ) {}
+	/**
+	 * For the settings callbacks, we need to hold on to the current options
+	 *
+	 * @var array
+	 */
+	protected static $current_options = array();
+
+	public function __construct($options) {
+		if (empty($options) || empty($options['api_key'])) {
+			throw new Exception(__('Mandrill API key not set', 'falcon'));
+		}
+		$this->api_key = $options['api_key'];
+	}
 
 	public function check_inbox() {}
 
-	public static function options_section_header() {
-	?>
-	<p><?php printf(
-		__("Once you've set your Reply-To address, set your Route in your <a href='%s'>Mandrill inbound dashboard</a>", 'falcon'),
-		'https://mandrillapp.com/inbound'
-	) ?></p>
+	public function send_mail( $users, Falcon_Message $message ) {
+		$options = $message->get_options();
 
-	<p><?php _e('For example, if <code>reply+%1$d-%2$s@yourdomain.com</code> is your reply-to, your Mandrill route would be <code>reply+*@yourdomain.com</code>', 'falcon') ?></p>
-	<?php
+		$from = Falcon::get_from_address();
+		$author = $message->get_author();
+
+		$messages = array();
+		foreach ($users as $user) {
+			$data = array(
+				'from_email' => $from,
+				'to'         => array(
+					array(
+						'email' => $user->user_email,
+						'name'  => $user->display_name,
+					)
+				),
+				'subject'    => $message->get_subject(),
+				'headers'    => array(
+					'Reply-To' => $message->get_reply_address( $user ),
+				),
+			);
+
+			if ( $author ) {
+				$data['from_name'] = $author;
+			}
+
+			if ( $text = $message->get_text() ) {
+				$data['text'] = $text;
+			}
+			if ( $html = $message->get_html() ) {
+				$data['html'] = $html;
+			}
+
+			// Set the message ID if we've got one
+			if ( ! empty( $options['message-id'] ) ) {
+				$data['headers']['Message-ID'] = $options['message-id'];
+			}
+
+			// If this is a reply, set the headers as needed
+			if ( ! empty( $options['in-reply-to'] ) ) {
+				$original = $options['in-reply-to'];
+				if ( is_array( $original ) ) {
+					$original = isset( $options['in-reply-to'][ $user->ID ] ) ? $options['in-reply-to'][ $user->ID ] : null;
+				}
+
+				if ( ! empty( $original ) ) {
+					$data['headers']['In-Reply-To'] = $original;
+				}
+			}
+
+			if ( ! empty( $options['references'] ) ) {
+				$references = implode( ' ', $options['references'] );
+				$data['headers']['References'] = $references;
+			}
+
+			$messages[ $user->ID ] = $this->send_single($data);
+		}
+
+		return $messages;
 	}
 
-	public static function register_option_fields( $group, $section, $options ) {}
+	protected function send_single($data) {
+		$headers = array(
+			'Accept' => 'application/json',
+			'Content-Type' => 'application/json',
+		);
+		$body = array(
+			'key' => $this->api_key,
+			'message' => $data,
+		);
 
-	public static function validate_options( $input ) {}
+		$response = wp_remote_post('https://mandrillapp.com/api/1.0/messages/send.json', array(
+			'headers' => $headers,
+			'body' => json_encode($body)
+		));
 
-	public function send_mail( $users, Falcon_Message $message ) {
-		$from = Falcon::get_from_address();
-		if ( $author = $message->get_author() ) {
-			$from = sprintf( '%s <%s>', $author, $from );
+		$code = wp_remote_retrieve_response_code($response);
+		switch ($code) {
+			case 200:
+				break;
+
+			case 401:
+				throw new Exception(__('Invalid API key', 'falcon'), 401);
+			case 422:
+				throw new Exception(sprintf(__('Error with sent body: %s', 'falcon'), wp_remote_retrieve_body($response)), 422);
+			case 500:
+				throw new Exception(__('Mandrill server error', 'falcon'), 500);
+			default:
+				throw new Exception(__('Unknown error', 'falcon'), (int) $code);
 		}
 
-		foreach ($users as $user) {
-
-			$from_address = $from;
-			$reply_to = $message->get_reply_address( $user );
-			$headers = "Reply-to:$reply_to\nFrom:$from_address";
-
-			wp_mail( $user->user_email, $message->get_subject(), $message->get_text(), $headers );
+		$data = json_decode( wp_remote_retrieve_body( $response ) );
+		if ( empty( $data ) ) {
+			throw new Exception(__('Invalid response from Mandrill', 'falcon'));
 		}
+
+		return $data[0]->_id;
 	}
 
 	/**
@@ -84,7 +164,7 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 	}
 
 	public static function supports_message_ids() {
-		return false;
+		return true;
 	}
 
 	/**
