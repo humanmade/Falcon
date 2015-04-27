@@ -49,6 +49,12 @@ class Falcon_Manager extends Falcon_Autohooker {
 				.falcon-grid thead tr {
 					border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 				}
+
+				.falcon-grid th .details {
+					font-weight: normal;
+					font-size: 13px;
+					color: #aaa;
+				}
 			</style>
 			<?php
 

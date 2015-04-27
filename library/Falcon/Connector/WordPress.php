@@ -769,9 +769,17 @@ class Falcon_Connector_WordPress {
 			foreach ( $sites as $site ):
 				$details = get_blog_details( $site );
 				$settings = $this->get_settings_for_user( $user->ID, $site );
+
+				$title = esc_html( $details->blogname ) . '<br >';
+				$path = $details->path;
+				if ( $path === '/' ) {
+					$path = '';
+				}
+
+				$title .= '<span class="details">' . esc_html( $details->domain . $path ) . '</span>';
 				?>
 				<tr>
-					<th scope="row"><?php echo esc_html( $details->blogname ) ?></th>
+					<th scope="row"><?php echo $title ?></th>
 
 					<?php
 					foreach ( $available as $type => $opts ) {
