@@ -104,7 +104,7 @@ class Falcon_Connector_WordPress {
 		$message->set_options( $options );
 
 		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $post ) {
-			return Falcon::get_reply_address( $post->ID, $user );
+			return Falcon::get_reply_address( 'post_' . $post->ID, $user );
 		} );
 
 		$responses = $this->handler->send_mail( $recipients, $message );
@@ -219,8 +219,8 @@ class Falcon_Connector_WordPress {
 		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
 		$message->set_subject( $subject );
 
-		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $post ) {
-			return Falcon::get_reply_address( $post->ID, $user );
+		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $comment ) {
+			return Falcon::get_reply_address( 'comment_' . $comment->comment_ID, $user );
 		} );
 
 		$options = array();
@@ -534,7 +534,26 @@ class Falcon_Connector_WordPress {
 			return $value;
 		}
 
-		$post = get_post( $reply->post );
+		$comment_parent = null;
+		list( $type, $parent_id ) = explode( '_', $reply->post, 2 );
+		switch ( $type ) {
+			case 'post':
+				$post = get_post( $parent_id );
+				break;
+
+			case 'comment':
+				$comment_parent = get_comment( $parent_id );
+				if ( empty( $comment_parent ) ) {
+					return $value;
+				}
+
+				$post = get_post( $comment_parent->comment_post_ID );
+				break;
+
+			default:
+				return $value;
+		}
+
 		if ( ! $this->is_allowed_type( $post->post_type ) ) {
 			return $value;
 		}
@@ -547,7 +566,7 @@ class Falcon_Connector_WordPress {
 		}
 
 		$data = array(
-			'comment_post_ID'      => $reply->post,
+			'comment_post_ID'      => $post->ID,
 			'user_id'              => $user->ID,
 			'comment_author'       => $user->display_name,
 			'comment_author_email' => $user->user_email,
@@ -555,6 +574,9 @@ class Falcon_Connector_WordPress {
 
 			'comment_content'  => $reply->parse_body(),
 		);
+		if ( ! empty( $comment_parent ) ) {
+			$data['comment_parent'] = $comment_parent->comment_ID;
+		}
 
 		return wp_insert_comment( $data );
 	}
