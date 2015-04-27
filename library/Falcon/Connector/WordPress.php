@@ -725,7 +725,6 @@ class Falcon_Connector_WordPress {
 				}
 			}
 		}
-		exit;
 	}
 
 	public function network_notification_settings( $user = null, $sites ) {

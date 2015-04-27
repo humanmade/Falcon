@@ -338,12 +338,18 @@ class Falcon_Admin extends Falcon_Autohooker {
 		$oldvalue = Falcon::get_option('bbsub_replyto', '');
 
 		// Append the plus address if it's not already there
-		$address = $input;
-		if ( strpos( $address, '+' ) === false) {
-			list( $user_part, $host_part ) = explode( '@', $address );
-			$user_part .= '+%1$s-%2$s';
-			$address = $user_part . '@' . $host_part;
+		if ( strpos( $input, '+' ) !== false) {
+			add_settings_error(
+				'bbsub_replyto',
+				'bbsub_replyto_invalid',
+				__('The reply-to address must not contain a plus address section', 'falcon')
+			);
+			return $oldvalue;
 		}
+
+		list( $user_part, $host_part ) = explode( '@', $input );
+		$user_part .= '+%1$s-%2$s';
+		$address = $user_part . '@' . $host_part;
 
 		// Test it out!
 		$hmac = hash_hmac('sha1', '5|1', 'bbsub_reply_by_email');
