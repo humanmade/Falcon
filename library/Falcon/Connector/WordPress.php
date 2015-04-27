@@ -20,6 +20,19 @@ class Falcon_Connector_WordPress {
 		add_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
 
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
+		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
+		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
+		add_action( 'falcon.manager.network_profile_fields', array( $this, 'network_notification_settings' ), 10, 2 );
+	}
+
+	/**
+	 * Get a human-readable name for the handler
+	 *
+	 * This is used for the handler selector and is shown to the user.
+	 * @return string
+	 */
+	public static function get_name() {
+		return 'WordPress';
 	}
 
 	public static function is_allowed_type( $type ) {
@@ -344,35 +357,174 @@ class Falcon_Connector_WordPress {
 		return $references;
 	}
 
+	/**
+	 * Get all subscribers for post notifications
+	 *
+	 * @param WP_Post $post Post being checked
+	 * @return WP_User[]
+	 */
 	protected function get_post_subscribers( WP_Post $post ) {
-		$user_roles = get_option( 'falcon_wp_auto_roles', array() );
+		$recipients = array();
 
-		// Bail out if no user roles found
-		if ( empty( $user_roles ) ) {
+		// Find everyone who has a matching preference, or who is using the
+		// default (if it's on)
+		$query = array(
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => $this->key_for_setting( 'notifications.post' ),
+					'value' => 'all'
+				),
+			),
+		);
+
+		$default = $this->get_default_settings();
+		if ( $default['post'] === 'all' ) {
+			$query['meta_query'][] = array(
+				'key' => $this->key_for_setting( 'notifications.post' ),
+				'compare' => 'NOT EXISTS',
+			);
+		}
+
+		$users = get_users( $query );
+		if ( empty( $users ) ) {
 			return array();
 		}
 
-		$recipients = array();
-		foreach ( $user_roles as $role ) {
-			$users = get_users( array(
-				'role' => $role,
-				'fields' => array(
-					'ID',
-					'user_email',
-					'display_name'
-				)
-			) );
-
-			$recipients = array_merge( $recipients, $users );
-		}
+		// Filter out any users without read access to the post
+		$recipients = array_filter( $users, function ( WP_User $user ) use ( $post ) {
+			return user_can( $user, 'read_post', $post->ID );
+		} );
 
 		return $recipients;
 	}
 
-	protected function get_comment_subscribers( $comment ) {
-		// Grab subscribers for the post itself
-		$subscribers = array();
+	/**
+	 * Get all subscribers for comment notifications
+	 *
+	 * @param stdClass $comment Comment being checked
+	 * @return WP_User[]
+	 */
+	public function get_comment_subscribers( $comment ) {
+		$recipients = array();
 
+		// Find everyone who has a matching preference, or who is using the
+		// default (if it's on)
+		$query = array(
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => $this->key_for_setting( 'notifications.comment' ),
+					'value' => 'all'
+				),
+			),
+		);
+
+		$default = $this->get_default_settings();
+		if ( $default['post'] === 'all' ) {
+			$query['meta_query'][] = array(
+				'key' => $this->key_for_setting( 'notifications.comment' ),
+				'compare' => 'NOT EXISTS',
+			);
+		}
+
+
+		$users = get_users( $query );
+		if ( empty( $users ) ) {
+			return array();
+		}
+
+		// Also grab everyone if they're in the thread and subscribed to
+		// same-thread comments
+		$sibling_authors = $this->get_thread_subscribers( $comment );
+		$users = array_merge( $users, $sibling_authors );
+
+		// Trim to unique authors using IDs as key
+		$subscribers = array();
+		foreach ( $users as $user ) {
+			if ( isset( $subscribers[ $user->ID ] ) ) {
+				// Already handled
+				continue;
+			}
+
+			if ( ! user_can( $user, 'read_post', $comment->comment_post_ID ) ) {
+				// No access, skip
+				continue;
+			}
+
+			$subscribers[ $user->ID ] = $user;
+		}
+
+		return $subscribers;
+	}
+
+	/**
+	 * Get subscribers for the thread that a comment is in
+	 *
+	 * Gets subscribers to the thread (i.e. parent comment authors who are
+	 * subscribed) as well as subscribers to all threads (i.e. comment authors
+	 * who are subscribed to all comments on the post)
+	 *
+	 * @param stdClass $comment Comment being checked
+	 * @return array
+	 */
+	protected function get_thread_subscribers( $comment ) {
+		$sibling_comments = get_comments( array(
+			'post_id'         => $comment->comment_post_ID,
+			'comment__not_in' => $comment->comment_ID,
+			'type'            => 'comment'
+		) );
+		if ( empty( $sibling_comments ) ) {
+			return array();
+		}
+
+		$users = array();
+		$indexed = array();
+		foreach ( $sibling_comments as $sibling ) {
+			// Re-index by ID for later usage
+			$indexed[ $sibling->comment_ID ] = $sibling;
+
+			// Grab just comments with author IDs
+			if ( empty( $sibling->user_id ) ) {
+				continue;
+			}
+
+			// Skip duplicate parsing
+			if ( isset( $users[ $sibling->user_id ] ) ) {
+				continue;
+			}
+
+			$pref = get_user_meta( $sibling->user_id, $this->key_for_setting( 'notifications.comment' ), true );
+			$users[ $sibling->user_id ] = ( $pref === 'participant' );
+		}
+
+		// Now, find users in the thread
+		$sibling = $comment;
+		while ( ! empty( $sibling->comment_parent ) ) {
+			$parent_id = $sibling->comment_parent;
+			if ( ! isset( $indexed[ $parent_id ] ) ) {
+				break;
+			}
+
+			$sibling = $indexed[ $parent_id ];
+			if ( ! isset( $sibling->user_id ) ) {
+				continue;
+			}
+
+			$pref = get_user_meta( $sibling->user_id, $this->key_for_setting( 'notifications.comment' ), true );
+			if ( $pref ) {
+				$users[ $sibling->user_id ] = true;
+			}
+		}
+
+		$subscribers = array();
+		foreach ( $users as $user => $subscribed ) {
+			if ( ! $subscribed ) {
+				continue;
+			}
+
+			$subscribers[] = get_userdata( $user );
+		}
 		return $subscribers;
 	}
 
@@ -406,50 +558,202 @@ class Falcon_Connector_WordPress {
 		return wp_insert_comment( $data );
 	}
 
-	public function register_settings() {
-		return;
-
-		register_setting( 'bbsub_options', 'falcon_wp_auto_roles', array(__CLASS__, 'validate_topic_notification') );
-
-		add_settings_section('bbsub_options_bbpress', 'WordPress', '__return_null', 'bbsub_options');
-		add_settings_field('bbsub_options_bbpress_topic_notification', 'New Post Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_bbpress');
-	}
-
 	/**
-	 * Print field for new topic notification
+	 * Get available settings for notifications
 	 *
-	 * @see self::init()
-	 */
-	public static function settings_field_topic_notification() {
-		global $wp_roles;
-
-		if ( !$wp_roles ) {
-			$wp_roles = new WP_Roles();
-		}
-
-		$options = get_option( 'falcon_wp_auto_roles', array() );
-
-		foreach ($wp_roles->get_names() as $key => $role_name) {
-			$current = in_array($key, $options) ? $key : '0';
-			?>
-			<label>
-				<input type="checkbox" value="<?php echo esc_attr( $key ); ?>" name="falcon_wp_auto_roles[]" <?php checked( $current, $key ); ?> />
-				<?php echo $role_name; ?>
-			</label>
-			<br />
-			<?php
-		}
-
-		echo '<span class="description">' . __( 'Sends new topic email and auto-subscribe the users from these role to the new topic', 'bbsub' ) . '</span>';
-	}
-
-	/**
-	 * Validate the new topic notification
-	 *
-	 * @param array $input
 	 * @return array
 	 */
-	public function validate_topic_notification( $input ) {
-		return is_array( $input ) ? $input : array();
+	public function get_available_settings() {
+		return array(
+			'post' => array(
+				'all' => __( 'All new posts', 'falcon' ),
+				''    => __( 'No notifications', 'falcon' ),
+			),
+
+			'comment' => array(
+				'all'         => __( 'All new comments', 'falcon' ),
+				'participant' => __( "New comments on posts I've commented on", 'falcon' ),
+				'replies'     => __( 'Replies to my comments', 'falcon' ),
+				''            => __( 'No notifications', 'falcon' )
+			),
+		);
+	}
+
+	/**
+	 * Get default notification settings
+	 *
+	 * @return array Map of type => pref value
+	 */
+	protected function get_default_settings() {
+		$keys = array(
+			'post'    => 'all',
+			'comment' => 'all',
+		);
+		$defaults = array();
+
+		foreach ( $keys as $key => $hardcoded_default ) {
+			$option_key = $this->key_for_setting( 'notifications.' . $key );
+			$value = get_option( $option_key, null );
+
+			$defaults[ $key ] = isset( $value ) ? $value : $hardcoded_default;
+		}
+
+		return $defaults;
+	}
+
+	/**
+	 * Get notification settings for the current user
+	 *
+	 * @param int $user_id User to get settings for
+	 * @return array Map of type => pref value
+	 */
+	protected function get_settings_for_user( $user_id ) {
+		$available = $this->get_available_settings();
+		$settings = array();
+
+		foreach ( $available as $type => $choices ) {
+			$key = $this->key_for_setting( 'notifications.' . $type );
+			$value = get_user_meta( $user_id, $key );
+			if ( empty( $value ) ) {
+				continue;
+			}
+
+			$settings[ $type ] = $value[0];
+		}
+
+		return $settings;
+	}
+
+	protected function key_for_setting( $key ) {
+		return Falcon_Manager::key_for_setting( 'wordpress', $key );
+	}
+
+	protected function print_field( $field, $settings, $is_defaults_screen = false ) {
+		$defaults = $this->get_default_settings();
+
+		$site_id = get_current_blog_id();
+		$default = isset( $defaults[ $field ] ) ? $defaults[ $field ] : false;
+		$current = isset( $settings[ $field ] ) ? $settings[ $field ] : $default;
+
+		$notifications = $this->get_available_settings();
+
+		foreach ( $notifications[ $field ] as $value => $title ) {
+			$maybe_default = '';
+			if ( ! $is_defaults_screen && $value === $default ) {
+				$maybe_default = '<strong>' . esc_html__( ' (default)' ) . '</strong>';
+			}
+
+			printf(
+				'<label><input type="radio" name="%s" value="%s" %s /> %s</label><br />',
+				esc_attr( $this->key_for_setting( 'notifications.' . $field ) ),
+				esc_attr( $value ),
+				checked( $value, $current, false ),
+				esc_html( $title ) . $maybe_default
+			);
+		}
+	}
+
+	public function output_settings( $user = null ) {
+		// Are we on the notification defaults screen?
+		$is_defaults_screen = empty( $user );
+
+		// Grab defaults and currently set
+		$settings = $is_defaults_screen ? $this->get_default_settings() : $this->get_settings_for_user( $user->ID );
+
+		?>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Posts', 'falcon' ) ?></th>
+				<td>
+					<?php $this->print_field( 'post', $settings, $is_defaults_screen ) ?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Comments', 'falcon' ) ?></th>
+				<td>
+					<?php $this->print_field( 'comment', $settings, $is_defaults_screen ) ?>
+				</td>
+			</tr>
+		<?php
+	}
+
+	public function save_profile_settings( $user_id, $args = array() ) {
+		$available = $this->get_available_settings();
+
+		foreach ( $available as $type => $options ) {
+			$key = $this->key_for_setting( 'notifications.' . $type );
+
+			// PHP strips '.' out of POST data as a relic from the
+			// register_globals days, so we need to take that into account
+			$request_key = str_replace( '.', '_', $key );
+			if ( ! isset( $args[ $request_key ] ) ) {
+				continue;
+			}
+			$value = $args[ $request_key ];
+
+			// Check the value is valid
+			$options = array_keys( $options );
+			if ( ! in_array( $value, $options ) ) {
+				continue;
+			}
+
+			// Actually set it!
+			if ( ! update_user_meta( $user_id, wp_slash( $key ), wp_slash( $value ) ) ) {
+				// TODO: Log this?
+				continue;
+			}
+		}
+	}
+
+	public function network_notification_settings( $user_id = null, $sites ) {
+		// Are we on the notification defaults screen?
+		$is_defaults_screen = empty( $user_id );
+
+		// Grab defaults and currently set
+		$settings = $is_defaults_screen ? $defaults : $this->get_settings_for_user( $user_id );
+
+		$available = $this->get_available_settings();
+
+		?>
+		<table class="form-table">
+			<colgroup>
+				<col />
+				<col span="<?php echo esc_attr( count( $available['post'] ) ) ?>" style="border-right: 10px solid blue" />
+				<col span="<?php echo esc_attr( count( $available['comment'] ) ) ?>" />
+			</colgroup>
+
+			<thead>
+				<tr>
+					<th rowspan="2"></th>
+					<th colspan="<?php echo esc_attr( count( $available['post'] ) ) ?>"><?php
+						esc_html_e( 'Posts', 'falcon' ) ?></th>
+					<th colspan="<?php echo esc_attr( count( $available['comment'] ) ) ?>"><?php
+						esc_html_e( 'Comments', 'falcon' ) ?></th>
+				</tr>
+				<tr>
+					<?php foreach ( $available['post'] as $key => $title ): ?>
+						<td><abbr title="<?php echo esc_attr( $title ) ?>"><?php echo esc_html( $title ) ?></abbr></td>
+					<?php endforeach ?>
+
+					<?php foreach ( $available['comment'] as $key => $title ): ?>
+						<td><abbr title="<?php echo esc_attr( $title ) ?>"><?php echo esc_html( $title ) ?></abbr></td>
+					<?php endforeach ?>
+				</tr>
+			</thead>
+
+			<?php foreach ( $sites as $site ): $details = get_blog_details( $site ); ?>
+				<tr>
+					<th scope="row"><?php echo esc_html( $details->blogname ) ?></th>
+
+					<?php foreach ( $available['post'] as $key => $title ): ?>
+						<td><input type="radio" name="<?php echo esc_attr( $key ) ?>" /></td>
+					<?php endforeach ?>
+
+					<?php foreach ( $available['comment'] as $key => $title ): ?>
+						<td><input type="radio" name="<?php echo esc_attr( $key ) ?>" /></td>
+					<?php endforeach ?>
+				</tr>
+			<?php endforeach ?>
+		</table>
+		<?php
 	}
 }

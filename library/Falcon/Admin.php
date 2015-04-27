@@ -20,6 +20,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 */
 	public static function bootstrap() {
 		self::register_hooks();
+		Falcon_Manager::bootstrap();
 	}
 
 	/**
@@ -45,12 +46,18 @@ class Falcon_Admin extends Falcon_Autohooker {
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
 
+		// Note: title is false so that we can handle it ourselves
+		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
+
 		foreach ( Falcon::get_connectors() as $connector ) {
+			if ( ! is_callable( $connector, 'register_settings' ) ) {
+				continue;
+			}
+
 			$connector->register_settings();
 		}
 
-		// Note: title is false so that we can handle it ourselves
-		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
+		Falcon_Manager::register_default_settings();
 	}
 
 	/**

@@ -88,4 +88,66 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 		return false;
 	}
 
+	/**
+	 * Output a description for the options
+	 *
+	 * If you have any extra information you want to tell the user, this is
+	 * probably the best place for it to live.
+	 */
+	public static function options_section_header() {
+?>
+		<p><?php
+		printf(
+			__("Once you've set up your API key here, add an Inbound route in your <a href='%s'>Mandrill inbound dashboard</a> to <code>%s</code>", 'falcon'),
+			'https://mandrillapp.com/inbound',
+			admin_url('admin-post.php?action=bbsub')
+		)
+		?></p>
+<?php
+	}
+
+	/**
+	 * Register handler-specific option fields
+	 *
+	 * @see bbSubscriptions_Handler::register_option_fields
+	 * @param string $group Settings group (4th parameter to `add_settings_field`)
+	 * @param string $section Settings section (5th parameter to `add_settings_field`)
+	 * @param array $options Current options
+	 */
+	public static function register_option_fields($group, $section, $options) {
+		self::$current_options = $options;
+		add_settings_field('bbsub_mandrill_apikey', __('Mandrill API Key', 'falcon'), array(__CLASS__, 'field_apikey'), $group, $section);
+	}
+
+	public static function field_apikey() {
+		$key = '';
+		if (isset(self::$current_options['api_key'])) {
+			$key = self::$current_options['api_key'];
+		}
+?>
+		<input type="text" name="bbsub_handler_options[api_key]"
+			id="bbsub_mandrill_apikey" value="<?php echo esc_attr($key) ?>"
+			class="regular-text code" />
+		<p class="description">
+			<?php printf(
+				__("You'll need to create an API key on the Mandrill site. Head to <a href='%s'>your settings</a>, then generate an API key under the credentials tab", 'falcon'),
+				'https://mandrillapp.com/settings'
+			) ?>
+		</p>
+<?php
+	}
+
+	/**
+	 * Validate the options from the submitted form
+	 *
+	 * @see bbSubscriptions_Handler::validate_options
+	 * @param array $input Raw POSTed data
+	 * @return array Sanitized POST data
+	 */
+	public static function validate_options($input) {
+		$sanitized = array();
+		$sanitized['api_key'] = trim($input['api_key']);
+		return $sanitized;
+	}
+
 }
