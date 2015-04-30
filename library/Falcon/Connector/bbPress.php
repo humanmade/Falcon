@@ -16,30 +16,30 @@ class Falcon_Connector_bbPress {
 	 * Notify user roles on new topic
 	 */
 	public function notify_new_topic( $topic_id = 0, $forum_id = 0, $anonymous_data = 0, $topic_author = 0) {
-	    $user_roles = Falcon::get_option( 'bbsub_topic_notification', array() );
+		$user_roles = Falcon::get_option( 'bbsub_topic_notification', array() );
 
-	    // bail out if no user roles found
-	    if ( !$user_roles ) {
-	    	return;
-	    }
+		// bail out if no user roles found
+		if ( !$user_roles ) {
+			return;
+		}
 
-	    $recipients = array();
-	    foreach ($user_roles as $role) {
-	    	$users = get_users(array('role' => $role, 'fields' => array('ID', 'user_email', 'display_name')));
-	    	$recipients = array_merge( $recipients, $users );
-	    }
+		$recipients = array();
+		foreach ($user_roles as $role) {
+			$users = get_users(array('role' => $role, 'fields' => array('ID', 'user_email', 'display_name')));
+			$recipients = array_merge( $recipients, $users );
+		}
 
-	    // still no users?
-	    if ( !$recipients ) {
-	    	return;
-	    }
+		// still no users?
+		if ( !$recipients ) {
+			return;
+		}
 
-	    // subscribe the users automatically
-	    foreach ($recipients as $user) {
-	    	bbp_add_user_subscription( $user->ID, $topic_id );
-	    }
+		// subscribe the users automatically
+		foreach ($recipients as $user) {
+			bbp_add_user_subscription( $user->ID, $topic_id );
+		}
 
-	    // Sanitize the HTML into text
+		// Sanitize the HTML into text
 		$content = apply_filters( 'bbsub_html_to_text', bbp_get_topic_content( $topic_id ) );
 
 		// Build email
@@ -220,6 +220,6 @@ class Falcon_Connector_bbPress {
 	 * @return array
 	 */
 	public function validate_topic_notification( $input ) {
-	    return is_array( $input ) ? $input : array();
+		return is_array( $input ) ? $input : array();
 	}
 }
