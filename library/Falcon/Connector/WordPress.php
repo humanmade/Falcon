@@ -216,7 +216,7 @@ class Falcon_Connector_WordPress {
 		$message->set_text( $this->get_comment_content_as_text( $comment ) );
 		$message->set_html( $this->get_comment_content_as_html( $comment ) );
 
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . get_the_title( $post ), $id, $post->ID);
+		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $post ), ENT_QUOTES ), $id, $post->ID);
 		$message->set_subject( $subject );
 
 		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $comment ) {
