@@ -779,8 +779,8 @@ class Falcon_Connector_WordPress {
 								'<td class="%s"><abbr title="%s">%s</abbr>%s</td>',
 								( $key === $last ? 'last_of_col' : '' ),
 								esc_attr( $title ),
-								( $key === $defaults[ $type ] ) ? ' <strong>*</strong>' : '',
-								esc_html( $short_names[ $type ][ $key ] )
+								esc_html( $short_names[ $type ][ $key ] ),
+								( $key === $defaults[ $type ] ) ? ' <strong>*</strong>' : ''
 							);
 						}
 					}
