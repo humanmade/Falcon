@@ -2,17 +2,17 @@
 /**
  * HTML to Text converter
  *
- * @package bbSubscriptions
+ * @package Falcon
  * @subpackage Parsing
  */
 
 /**
  * HTML to Text converter
  *
- * @package bbSubscriptions
+ * @package Falcon
  * @subpackage Parsing
  */
-class bbSubscriptions_Converter {
+class Falcon_Converter {
 	/**
 	 * HTML fragment
 	 * @var string

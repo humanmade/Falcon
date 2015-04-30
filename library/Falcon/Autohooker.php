@@ -2,11 +2,8 @@
 
 /**
  * A new way of using the WordPress API
- *
- * @package Sputnik
- * @subpackage Public Utilities
  */
-abstract class bbSubscriptions_Autohooker {
+abstract class Falcon_Autohooker {
 
 	/**
 	 * Register hooks
@@ -102,7 +99,7 @@ abstract class bbSubscriptions_Autohooker {
 			return true;
 		}
 
-		$method = new ReflectionMethod('Sputnik_Library_Plugin_Base', 'check_eaccelerator_saneness');
+		$method = new ReflectionMethod('Falcon_Autohooker', 'check_eaccelerator_saneness');
 		$comment = $method->getDocComment();
 
 		return (strpos($comment, "If you can find me, it's sane.") !== false);
