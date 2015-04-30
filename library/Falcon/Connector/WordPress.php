@@ -755,6 +755,7 @@ class Falcon_Connector_WordPress {
 
 		$available = $this->get_available_settings();
 		$short_names = $this->get_available_settings_short();
+		$defaults = $this->get_default_settings();
 
 		?>
 		<table class="widefat falcon-grid">
@@ -775,9 +776,10 @@ class Falcon_Connector_WordPress {
 
 						foreach ( $opts as $key => $title ) {
 							printf(
-								'<td class="%s"><abbr title="%s">%s</abbr></td>',
+								'<td class="%s"><abbr title="%s">%s</abbr>%s</td>',
 								( $key === $last ? 'last_of_col' : '' ),
 								esc_attr( $title ),
+								( $key === $defaults[ $type ] ) ? ' <strong>*</strong>' : '',
 								esc_html( $short_names[ $type ][ $key ] )
 							);
 						}
@@ -804,7 +806,9 @@ class Falcon_Connector_WordPress {
 
 					<?php
 					foreach ( $available as $type => $opts ) {
-						$current = $settings[ $type ];
+						$default = isset( $defaults[ $type ] ) ? $defaults[ $type ] : false;
+						$current = isset( $settings[ $type ] ) ? $settings[ $type ] : $default;
+
 						$name = $this->key_for_setting( 'notifications.' . $type, $site );
 
 						foreach ( $opts as $key => $title ) {
