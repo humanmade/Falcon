@@ -92,7 +92,7 @@ class Falcon_Connector_WordPress {
 		$message->set_text( $this->get_post_content_as_text( $post ) );
 		$message->set_html( $this->get_post_content_as_html( $post ) );
 
-		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . get_the_title( $id ), $id );
+		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $id ), ENT_QUOTES ), $id );
 		$message->set_subject( $subject );
 
 		$message->set_author( get_the_author_meta( 'display_name', $post->post_author ) );
