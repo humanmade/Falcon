@@ -46,7 +46,7 @@ class Falcon_Connector_WordPress {
 	 * Notify user roles on new topic
 	 */
 	public function notify_on_publish( $id = 0, $post = null ) {
-		if ( empty( $this->handler ) ) {
+		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return;
 		}
 
@@ -176,7 +176,7 @@ class Falcon_Connector_WordPress {
 	 * Send a notification to subscribers
 	 */
 	public function notify_on_reply( $id = 0, $comment = null ) {
-		if ( empty( $this->handler ) ) {
+		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return false;
 		}
 

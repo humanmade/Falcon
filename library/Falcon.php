@@ -260,4 +260,28 @@ class Falcon extends Falcon_Autohooker {
 
 		return get_option( $key, $default );
 	}
+
+	/**
+	 * Is Falcon enabled for this site?
+	 *
+	 * When Falcon is used in network mode, it can be toggled per-site.
+	 *
+	 * Avoid using this to determine whether to hook in, instead use it inside
+	 * your hook callbacks to determine whether to run.
+	 *
+	 * @param int $site_id Site to check. Default is current site.
+	 * @return boolean
+	 */
+	public static function is_enabled_for_site( $site_id = null ) {
+		if ( ! self::is_network_mode() ) {
+			return true;
+		}
+
+		if ( empty( $site_id ) ) {
+			$site_id = get_current_blog_id();
+		}
+
+		$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
+		return in_array( $site_id, $sites );
+	}
 }
