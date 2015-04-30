@@ -3,4 +3,4 @@
 	url = https://github.com/jjaffeux/postmark-inbound-php.git
 [submodule "vendor/EmailReplyParser"]
 	path = vendor/EmailReplyParser
-	url = https://github.com/rmccue/EmailReplyParser.git
+	url = https://github.com/willdurand/EmailReplyParser.git
