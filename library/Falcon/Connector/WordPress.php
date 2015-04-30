@@ -679,7 +679,7 @@ class Falcon_Connector_WordPress {
 		foreach ( $notifications[ $field ] as $value => $title ) {
 			$maybe_default = '';
 			if ( ! $is_defaults_screen && $value === $default ) {
-				$maybe_default = '<strong>' . esc_html__( ' (default)' ) . '</strong>';
+				$maybe_default = '<strong>' . esc_html__( ' (default)', 'falcon' ) . '</strong>';
 			}
 
 			printf(
