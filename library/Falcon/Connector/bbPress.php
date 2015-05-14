@@ -127,7 +127,12 @@ class Falcon_Connector_bbPress {
 			'id'     => $topic_id,
 			'author' => $reply_author_name,
 		);
-		$this->handler->send_mail( $user_ids, $subject, $text, $options );
+		$message = new Falcon_Message();
+		$message->set_subject( $subject );
+		$message->set_text( $text);
+		$message->set_options( $options );
+		$this->handler->send_mail( $user_ids, $message);
+
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
