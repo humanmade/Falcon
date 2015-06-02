@@ -1,6 +1,6 @@
 <?php
 
-use \EmailReplyParser\Parser\EmailParser;
+use \EmailReplyParser\EmailReplyParser;
 
 class Falcon_Reply {
 	public $from;
@@ -16,9 +16,8 @@ class Falcon_Reply {
 	public function parse_body() {
 		// Parse the body and remove signatures, and reformat
 		$parts = array();
-		$parser = new EmailParser();
-		$email = $parser->parse($this->body);
-		foreach ($email->getFragments() as $fragment) {
+		$fragments = EmailReplyParser::read($this->body);
+		foreach ($fragments as $fragment) {
 			// We don't care about hidden parts (signatures, eg)
 			if ($fragment->isHidden()) {
 				continue;
