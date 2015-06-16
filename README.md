@@ -4,8 +4,8 @@
 
 For a long time, WordPress has had a pretty dysfunctional relationship with
 email. The Post by Email feature was neglected, then finally reinvigorated and
-moved to a plugin. Notifications for comments isn't the greatest, and
-notifications for new posts is non-existent.
+moved to a plugin. Notifications for comments aren't the greatest, and
+notifications for new posts are non-existent.
 
 This is annoying for most sites, but makes internal communication sites like P2
 super annoying to use.
@@ -33,14 +33,14 @@ example. We'll be sending emails from `reply@` from this domain, and you'll be
 replying to the same email (but with a plus address bit for authentication).
 
 (Wish we had support for another handler? Let us know, or try making a handler
-yourself! You'll find the code for it in `library/Falcon/Handler`)
+yourself! You'll find the code for it in `library/Falcon/Handler`.)
 
 [Mandrill]: https://mandrill.com/
 [Postmark]: https://postmarkapp.com/
 
 ### Step 2: Install and set up the plugin
 
-Clone down the plugin from GitHub and drop it in to your WP plugins directory.
+Clone the plugin from GitHub and drop it into your WP plugins directory.
 Enable it on your site, then head to the settings page and set your preferences.
 If you're following the steps from above, set both your Reply-To and From email
 address to `reply@notifications.example.com` (obviously with your domain
