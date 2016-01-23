@@ -37,6 +37,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 		register_setting( 'bbsub_options', 'bbsub_replyto', array(__CLASS__, 'validate_replyto') );
 		register_setting( 'bbsub_options', 'bbsub_from_email', array(__CLASS__, 'validate_from_email') );
 		register_setting( 'bbsub_options', 'bbsub_send_to_author', array(__CLASS__, 'validate_send_to_author') );
+		register_setting( 'bbsub_options', 'bbsub_send_async', array(__CLASS__, 'validate_send_async') );
 		register_setting( 'bbsub_options', 'bbsub_handler_options', array(__CLASS__, 'validate_handler_options') );
 
 		// Global Settings
@@ -45,6 +46,7 @@ class Falcon_Admin extends Falcon_Autohooker {
 		add_settings_field('bbsub_options_global_replyto', 'Reply-To Address', array(__CLASS__, 'settings_field_replyto'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_from_email', 'From Address', array(__CLASS__, 'settings_field_from'), 'bbsub_options', 'bbsub_options_global');
 		add_settings_field('bbsub_options_global_send_to_author', 'Send To', array(__CLASS__, 'settings_field_send_to_author'), 'bbsub_options', 'bbsub_options_global');
+		add_settings_field('bbsub_options_global_send_async', 'Send Asynchronously', array(__CLASS__, 'settings_field_send_async'), 'bbsub_options', 'bbsub_options_global');
 
 		// Note: title is false so that we can handle it ourselves
 		add_settings_section('bbsub_options_handleroptions', false, array(__CLASS__, 'settings_section_handler'), 'bbsub_options');
@@ -387,6 +389,32 @@ class Falcon_Admin extends Falcon_Autohooker {
 	 * @return string
 	 */
 	public static function validate_send_to_author($input) {
+		return (bool) $input;
+	}
+
+	/**
+	 * Print field for the Send to Author checkbox
+	 *
+	 * @see self::init()
+	 */
+	public static function settings_field_send_async() {
+		$current = Falcon::get_option('bbsub_send_async', '');
+
+		echo '<label><input type="checkbox" name="bbsub_send_async" ' . checked($current, true, false) . ' /> ';
+		_e('Send email to subscribers asynchronously', 'falcon');
+		echo '</label>';
+		echo '<p class="description">';
+		_e('This will send email using a one-off wp-cron task, reducing load time on new post creation. May cause issues wtih some systems.', 'falcon');
+		echo '</p>';
+	}
+
+	/**
+	 * Validate the Send to Author checkbox
+	 *
+	 * @param string $input
+	 * @return string
+	 */
+	public static function validate_send_async($input) {
 		return (bool) $input;
 	}
 

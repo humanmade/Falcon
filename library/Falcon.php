@@ -284,4 +284,13 @@ class Falcon extends Falcon_Autohooker {
 		$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
 		return in_array( $site_id, $sites );
 	}
+
+	/**
+	 * Should notifications be sent asynchronously?
+	 *
+	 * @return boolean
+	 */
+	public static function should_send_async() {
+		return (bool) Falcon::get_option( 'bbsub_send_async', false );
+	}
 }
