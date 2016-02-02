@@ -1,6 +1,6 @@
 <?php
 
-class Falcon_Connector_WordPress {
+class Falcon_Connector_WordPress extends Falcon_Connector {
 	const SENT_META_KEY = 'falcon_sent';
 	const MESSAGE_ID_KEY = 'falcon_message_ids';
 
@@ -14,10 +14,10 @@ class Falcon_Connector_WordPress {
 	public function __construct( $handler ) {
 		$this->handler = $handler;
 
-		add_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
+		$this->add_notify_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
 
-		add_action( 'wp_insert_comment', array( $this, 'notify_on_reply' ), 10, 2 );
-		add_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
+		$this->add_notify_action( 'wp_insert_comment', array( $this, 'notify_on_reply' ), 10, 2 );
+		$this->add_notify_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
 
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
