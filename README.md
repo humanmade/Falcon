@@ -53,6 +53,13 @@ You're done! Welcome to a new world of WP.
 
 ## Hey, I have some questions...
 
+### What about formatting?
+
+Falcon sends out the full HTML in a neatly formatted email, similar to GitHub's
+email notifications. We also convert the HTML over to a text representation
+similar to Markdown for clients that don't support HTML or prefer a text
+version of their notifications.
+
 ### What if I use multisite?
 
 Wow, do we have a treat for you? Falcon is built from the ground up to work
