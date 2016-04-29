@@ -52,11 +52,15 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 				$headers['References'] = $references;
 			}
 
+			foreach ( $headers as $header => $value ) {
+				$headers[ $header ] = $header . ': ' . $value;
+			}
+
 			wp_mail(
 				sprintf( '%s <%s>', $user->display_name, $user->user_email ),
 				$message->get_subject(),
 				$message->get_html(),
-				$headers
+				array_values( $headers )
 			);
 		}
 
