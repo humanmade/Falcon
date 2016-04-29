@@ -56,12 +56,16 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 				$headers[ $header ] = $header . ': ' . $value;
 			}
 
-			wp_mail(
+			$result = wp_mail(
 				sprintf( '%s <%s>', $user->display_name, $user->user_email ),
 				$message->get_subject(),
 				$message->get_html(),
 				array_values( $headers )
 			);
+
+			if ( ! $result ) {
+				trigger_error( 'wp_mail() failed to send message.', E_USER_WARNING );
+			}
 		}
 
 		return null;
