@@ -86,7 +86,12 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 				$data['headers']['References'] = $references;
 			}
 
-			$messages[ $user->ID ] = $this->send_single($data);
+			try {
+				$messages[ $user->ID ] = $this->send_single($data);
+			} catch ( Exception $e ) {
+				$error = sprintf( __( 'Exception while sending: %s', 'falcon' ), $e->getMessage() );
+				trigger_error( $error, E_USER_WARNING );
+			}
 		}
 
 		return $messages;
