@@ -42,6 +42,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return in_array( $type, $allowed_types );
 	}
 
+	public static function is_allowed_comment_type( $type ) {
+		// Only notify for allowed types
+		$allowed_types = apply_filters( 'falcon.connector.wordpress.comment_types', array( '' ), true );
+		return in_array( $type, $allowed_types );
+	}
+
 	/**
 	 * Notify user roles on new topic
 	 */
@@ -56,7 +62,6 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		}
 
 		// Only notify for allowed types
-		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
 		if ( ! $this->is_allowed_type( $post->post_type ) ) {
 			return;
 		}
@@ -187,6 +192,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		// Is the post published?
 		$post = get_post( $comment->comment_post_ID );
 		if ( get_post_status( $post ) !== 'publish' ) {
+			return false;
+		}
+
+		if ( ! $this->is_allowed_comment_type( $comment->comment_type ) ) {
 			return false;
 		}
 
