@@ -72,7 +72,7 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 	}
 
 	public static function get_name() {
-		return 'WP Mail';
+		return __( 'WP Mail', 'falcon' );
 	}
 
 	public static function supports_message_ids() {
