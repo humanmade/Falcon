@@ -41,6 +41,7 @@ class Falcon extends Falcon_Autohooker {
 		$default = array(
 			'postmark' => 'Falcon_Handler_Postmark',
 			'mandrill' => 'Falcon_Handler_Mandrill',
+			'wpmail' => 'Falcon_Handler_WPMail',
 		);
 		return apply_filters('bbsub_handlers', $default);
 	}
