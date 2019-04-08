@@ -3,7 +3,7 @@
 /**
  * WP Mail Handler
  *
- * @author Joe Hoyle <joe@humanmade.co.uk>
+ * @author Joe Hoyle <joe@humanmade.com>
  * @package Falcon
  * @subpackage Handlers
  */
