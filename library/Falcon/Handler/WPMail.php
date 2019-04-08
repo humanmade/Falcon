@@ -27,7 +27,7 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 			$headers = array(
 				'From'         => sprintf( '%s <%s>', $author, $from ),
 				'Reply-To'     => sprintf( '%s', $message->get_reply_address( $user ) ),
-				'Content-Type' => 'text/html; charset=UTF-8',
+				'Content-Type' => 'text/html',
 			);
 
 			// Set the message ID if we've got one
