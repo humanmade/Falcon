@@ -39,6 +39,7 @@ class Falcon extends Falcon_Autohooker {
 	 */
 	public static function get_handlers() {
 		$default = array(
+			'ses' => 'Falcon_Handler_SES',
 			'postmark' => 'Falcon_Handler_Postmark',
 			'mandrill' => 'Falcon_Handler_Mandrill',
 			'wpmail' => 'Falcon_Handler_WPMail',
