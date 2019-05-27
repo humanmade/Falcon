@@ -83,6 +83,32 @@ class Falcon_Handler_SES extends Falcon_Handler_WPMail {
 <?php
 	}
 
+	public function send_mail( $users, Falcon_Message $message ) {
+		// Filter arguments to ensure both text and HTML are sent.
+		$callback = function ( $message_args ) use ( $message ) {
+			// Remove default HTML/text.
+			unset( $message_args['text'] );
+			unset( $message_args['html'] );
+
+			// Re-add as appropriate.
+			if ( $text = $message->get_text() ) {
+				$message_args['text'] = $text;
+			}
+			if ( $html = $message->get_html() ) {
+				$message_args['html'] = $html;
+			}
+			return $message_args;
+		};
+
+		add_filter( 'aws_ses_wp_mail_message_args', $callback );
+
+		$res = parent::send_mail( $users, $message );
+
+		remove_filter( 'aws_ses_wp_mail_message_args', $callback );
+
+		return $res;
+	}
+
 	public function handle_post() {
 		$input = file_get_contents( 'php://input' );
 		if ( empty( $input ) ) {
