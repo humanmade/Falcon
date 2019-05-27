@@ -254,6 +254,15 @@ class Falcon extends Falcon_Autohooker {
 		return is_multisite() && is_plugin_active_for_network( FALCON_PLUGIN );
 	}
 
+	/**
+	 * Get an option's value.
+	 *
+	 * Uses network-wide options if in network mode. Keys must be prefixed.
+	 *
+	 * @param string $key Option key/name.
+	 * @param mixed $default Default value to return if no option is set.
+	 * @return mixed Option value if set, or $default if no option is set.
+	 */
 	public static function get_option( $key, $default = false ) {
 		if ( self::is_network_mode() ) {
 			return get_site_option( $key, $default );
