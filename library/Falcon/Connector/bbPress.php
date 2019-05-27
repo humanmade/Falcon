@@ -112,16 +112,8 @@ class Falcon_Connector_bbPress {
 			return get_userdata($id);
 		}, $user_ids);
 
-		// Sanitize the HTML into text
-		$content = apply_filters('bbsub_html_to_text', bbp_get_reply_content($reply_id));
-
 		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf($text, $content, bbp_get_reply_url($reply_id));
-		$text = apply_filters( 'bbsub_email_message', $text, $reply_id, $topic_id, $content );
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id);
+		$subject = apply_filters( 'bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id );
 
 		$options = array(
 			'id'     => $topic_id,
@@ -129,13 +121,79 @@ class Falcon_Connector_bbPress {
 		);
 		$message = new Falcon_Message();
 		$message->set_subject( $subject );
-		$message->set_text( $text );
+		$message->set_text( $this->get_reply_content_as_text( $reply_id, $topic_id ) );
+		$message->set_html( $this->get_reply_content_as_html( $reply_id ) );
 		$message->set_options( $options );
 		$this->handler->send_mail( $user_ids, $message );
 
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
 		return true;
+	}
+
+	protected function get_text_footer( $url ) {
+		$text = "---\n";
+		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
+		$text .= "\n" . $url . "\n\n";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+
+		return apply_filters( 'falcon.connector.bbpress.text_footer', $text, $url );
+	}
+
+	protected function get_html_footer( $url ) {
+		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
+		$footer .= sprintf(
+			'Reply to this email directly or <a href="%s">view it on %s</a>.',
+			$url,
+			get_option( 'blogname' )
+		);
+		$footer .= '</p>';
+
+		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
+	}
+
+	protected function get_reply_content_as_text( $reply_id, $topic_id ) {
+		$content = bbp_get_reply_content( $reply_id );
+
+		// Sanitize the HTML into text
+		$content = apply_filters( 'bbsub_html_to_text', $content );
+
+		// Build email
+		$text = $content . "\n\n" . $this->get_text_footer( bbp_get_reply_url( $reply_id ) );
+
+		// Run legacy filter.
+		$text = apply_filters_deprecated(
+			'bbsub_email_message',
+			[ $text, $reply_id, $topic_id, $content ],
+			'Falcon-0.5',
+			'falcon.connector.bbpress.reply_content_text'
+		);
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to change document formatting, etc
+		 *
+		 * @param string $text Text content
+		 * @param int $reply_id ID for the reply
+		 */
+		return apply_filters( 'falcon.connector.bbpress.reply_content_text', $text, $reply_id );
+	}
+
+	protected function get_reply_content_as_html( $reply_id ) {
+		$content = bbp_get_reply_content( $reply_id );
+
+		$text = $content . "\n\n" . $this->get_html_footer( bbp_get_reply_url( $reply_id ) );
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to add tracking codes, metadata, etc
+		 *
+		 * @param string $text HTML content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.bbpress.reply_content_html', $text, $post );
 	}
 
 	protected function is_allowed_type( $type ) {
