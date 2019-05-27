@@ -263,6 +263,23 @@ class Falcon extends Falcon_Autohooker {
 	}
 
 	/**
+	 * Update an option.
+	 *
+	 * Uses network-wide options if in network mode. Keys must be prefixed.
+	 *
+	 * @param string $key Option key/name.
+	 * @param mixed $value Value to set the option to.
+	 * @return bool True if option was updated, false otherwise.
+	 */
+	public static function update_option( $key, $value ) {
+		if ( self::is_network_mode() ) {
+			return update_site_option( $key, $value );
+		}
+
+		return update_option( $key, $value );
+	}
+
+	/**
 	 * Is Falcon enabled for this site?
 	 *
 	 * When Falcon is used in network mode, it can be toggled per-site.
