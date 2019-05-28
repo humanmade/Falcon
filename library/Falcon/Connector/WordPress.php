@@ -355,7 +355,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * Get the References for a comment
 	 *
 	 * @param stdClass $comment Comment object
-	 * @return string Message ID
+	 * @return string[] Message IDs
 	 */
 	protected function get_references_for_comment( $comment ) {
 		$references = array();
