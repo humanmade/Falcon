@@ -256,7 +256,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 			}
 		}
 		else {
-			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
+			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, true );
 			$options['in-reply-to'] = $message_ids;
 		}
 
