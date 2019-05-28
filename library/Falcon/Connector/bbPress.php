@@ -451,4 +451,20 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 			],
 		];
 	}
+
+	public function output_settings( $user = null ) {
+		parent::output_settings( $user );
+
+		echo '<tr><td colspan="2"><p class="description">';
+		_e( '<strong>Note:</strong> Notifications will always be sent for subscribed topics or forums.', 'falcon' );
+		echo '</p></td></tr>';
+	}
+
+	public function network_notification_settings( $user = null, $sites ) {
+		parent::network_notification_settings( $user, $sites );
+
+		echo '<p class="description">';
+		_e( '<strong>Note:</strong> Notifications will always be sent for subscribed topics or forums.', 'falcon' );
+		echo '</p>';
+	}
 }
