@@ -16,6 +16,27 @@ class Falcon_Connector_bbPress {
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 	}
 
+	protected function get_text_footer( $url ) {
+		$text = "---\n";
+		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
+		$text .= "\n" . $url . "\n\n";
+		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
+
+		return apply_filters( 'falcon.connector.bbpress.text_footer', $text, $url );
+	}
+
+	protected function get_html_footer( $url ) {
+		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
+		$footer .= sprintf(
+			'Reply to this email directly or <a href="%s">view it on %s</a>.',
+			$url,
+			get_option( 'blogname' )
+		);
+		$footer .= '</p>';
+
+		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
+	}
+
 	/**
 	 * Notify user roles on new topic
 	 *
@@ -207,27 +228,6 @@ class Falcon_Connector_bbPress {
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
 		return true;
-	}
-
-	protected function get_text_footer( $url ) {
-		$text = "---\n";
-		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
-		$text .= "\n" . $url . "\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-
-		return apply_filters( 'falcon.connector.bbpress.text_footer', $text, $url );
-	}
-
-	protected function get_html_footer( $url ) {
-		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
-		$footer .= sprintf(
-			'Reply to this email directly or <a href="%s">view it on %s</a>.',
-			$url,
-			get_option( 'blogname' )
-		);
-		$footer .= '</p>';
-
-		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
 	}
 
 	protected function get_reply_content_as_text( $reply_id, $topic_id ) {
