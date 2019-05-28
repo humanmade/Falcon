@@ -7,10 +7,10 @@ class Falcon_Connector_bbPress {
 		$this->handler = $handler;
 
 		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 10, 4 );
-		add_filter( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );
+		add_action( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );
 
 		// Remove built-in bbPress subscription handler.
-		remove_filter( 'bbp_new_topic', 'bbp_notify_forum_subscribers', 11, 4 );
+		remove_action( 'bbp_new_topic', 'bbp_notify_forum_subscribers', 11, 4 );
 		remove_action( 'bbp_new_reply', 'bbp_notify_topic_subscribers', 11, 5 );
 
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
