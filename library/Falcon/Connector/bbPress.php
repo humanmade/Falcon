@@ -16,8 +16,8 @@ class Falcon_Connector_bbPress {
 	public function __construct( $handler ) {
 		$this->handler = $handler;
 
-		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 10, 4 );
-		add_action( 'bbp_new_reply', array( $this, 'notify_on_reply'  ),  1, 5 );
+		add_action( 'bbp_new_topic', array( $this, 'notify_new_topic' ), 1, 4 );
+		add_action( 'bbp_new_reply', array( $this, 'notify_on_reply' ), 1, 5 );
 
 		// Remove built-in bbPress subscription handler.
 		remove_action( 'bbp_new_topic', 'bbp_notify_forum_subscribers', 11, 4 );
@@ -198,12 +198,8 @@ class Falcon_Connector_bbPress {
 	 * Send a notification to subscribers
 	 *
 	 * @param int $reply_id Reply that has been created.
-	 * @param int $topic_id Topic the reply belongs to.
-	 * @param int $forum_id Forum the reply belongs to.
-	 * @param boolean $anonymous_data Unused.
-	 * @param int $reply_author User ID for the author of the reply.
 	 */
-	public function notify_on_reply( $reply_id = 0, $topic_id = 0, $forum_id = 0, $anonymous_data = false, $reply_author = 0 ) {
+	public function notify_on_reply( $reply_id ) {
 		if ($this->handler === null) {
 			return false;
 		}
@@ -215,19 +211,18 @@ class Falcon_Connector_bbPress {
 		}
 
 		$reply_id = bbp_get_reply_id( $reply_id );
-		$topic_id = bbp_get_topic_id( $topic_id );
-		$forum_id = bbp_get_forum_id( $forum_id );
+		$topic_id = bbp_get_reply_topic_id( $reply_id );
 
-		if (!bbp_is_reply_published($reply_id)) {
+		if ( ! bbp_is_reply_published( $reply_id ) ) {
 			return false;
 		}
 
-		if (!bbp_is_topic_published($topic_id)) {
+		if ( ! bbp_is_topic_published( $topic_id ) ) {
 			return false;
 		}
 
-		$user_ids = bbp_get_topic_subscribers($topic_id, true);
-		if (empty($user_ids)) {
+		$user_ids = bbp_get_topic_subscribers( $topic_id, true );
+		if ( empty( $user_ids ) ) {
 			return false;
 		}
 
@@ -239,6 +234,7 @@ class Falcon_Connector_bbPress {
 		// Don't send notifications to the person who made the post
 		$send_to_author = Falcon::get_option('bbsub_send_to_author', false);
 
+		$reply_author = bbp_get_reply_author_id( $reply_id );
 		if (!$send_to_author && !empty($reply_author)) {
 			$user_ids = array_filter($user_ids, function ($id) use ($reply_author) {
 				return ((int) $id !== (int) $reply_author);
