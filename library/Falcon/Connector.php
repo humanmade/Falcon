@@ -176,12 +176,18 @@ abstract class Falcon_Connector {
 		// Grab defaults and currently set
 		$settings = $is_defaults_screen ? $this->get_default_settings() : $this->get_settings_for_user( $user->ID );
 
+		$label_prefix = '';
+		$has_multiple = count( Falcon::get_connectors() ) > 1;
+		if ( $has_multiple ) {
+			$label_prefix = $this->get_name() . ' ';
+		}
+
 		$fields = $this->get_settings_fields();
 
 		foreach ( $fields as $key => $options ) {
 			printf(
 				'<tr><th scope="row">%s</th><td>',
-				esc_html( $options['label'] )
+				esc_html( $label_prefix . $options['label'] )
 			);
 			$this->print_field( $key, $settings, $is_defaults_screen );
 			echo '</td></tr>';
@@ -197,11 +203,17 @@ abstract class Falcon_Connector {
 		$short_names = $this->get_available_settings_short();
 		$defaults = $this->get_default_settings();
 
+		$section_label = '';
+		$has_multiple = count( Falcon::get_connectors() ) > 1;
+		if ( $has_multiple ) {
+			$section_label = $this->get_name();
+		}
+
 		?>
 		<table class="widefat falcon-grid">
 			<thead>
 				<tr>
-					<th></th>
+					<th class="falcon-grid-section-label"><?php echo esc_html( $section_label ) ?></th>
 					<?php
 					$last = key( array_slice( $fields, -1, 1, true ) );
 					foreach ( $fields as $key => $options ) {
