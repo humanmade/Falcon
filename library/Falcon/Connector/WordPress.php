@@ -11,6 +11,11 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 */
 	protected $handler;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param Falcon_Handler @handler
+	 */
 	public function __construct( $handler ) {
 		$this->handler = $handler;
 
@@ -45,12 +50,24 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return 'wordpress';
 	}
 
+	/**
+	 * Check if the given post type is allowed to be replied to.
+	 *
+	 * @param string $type Post type to check.
+	 * @return bool True for allowed types, false otherwise.
+	 */
 	public static function is_allowed_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
 		return in_array( $type, $allowed_types );
 	}
 
+	/**
+	 * Check if the given comment type is allowed to be replied to.
+	 *
+	 * @param string $type Comment type to check.
+	 * @return bool True for allowed types, false otherwise.
+	 */
 	public static function is_allowed_comment_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.comment_types', array( '' ), true );
@@ -58,7 +75,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	}
 
 	/**
-	 * Notify user roles on new topic
+	 * Notify users on post publish.
+	 *
+	 * @param int $id ID of the post being published.
+	 * @param WP_Post $post Post object for the post being published.
 	 */
 	public function notify_on_publish( $id = 0, $post = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
@@ -130,6 +150,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		update_post_meta( $id, static::SENT_META_KEY, true );
 	}
 
+	/**
+	 * Get text-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string Text footer to append to message.
+	 */
 	protected function get_text_footer( $url ) {
 		$text = "---\n";
 		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
@@ -138,6 +164,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.text_footer', $text, $url );
 	}
 
+	/**
+	 * Get HTML-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string HTML footer to append to message.
+	 */
 	protected function get_html_footer( $url ) {
 		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
 		$footer .= sprintf(
@@ -150,7 +182,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
 	}
 
-	protected function get_post_content_as_text( $post ) {
+	/**
+	 * Get text-formatted message for a post.
+	 *
+	 * @param WP_Post $post Post to notify for.
+	 * @return string Plain text message.
+	 */
+	protected function get_post_content_as_text( WP_Post $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
 		// Sanitize the HTML into text
@@ -170,6 +208,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.post_content_text', $text, $post );
 	}
 
+	/**
+	 * Get HTML-formatted message for a post.
+	 *
+	 * @param WP_Post $post Post to notify for.
+	 * @return string HTML message.
+	 */
 	protected function get_post_content_as_html( $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
@@ -187,7 +231,11 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	}
 
 	/**
-	 * Send a notification to subscribers
+	 * Notify users on comment approval.
+	 *
+	 * @param int $id ID of the comment being approved.
+	 * @param WP_Comment $comment Comment object for the comment being approved.
+	 * @return boolean True if notifications were sent, false otherwise.
 	 */
 	public function notify_on_reply( $id = 0, $comment = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
@@ -267,6 +315,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return true;
 	}
 
+	/**
+	 * Get text-formatted message for a comment.
+	 *
+	 * @param WP_Comment $comment Comment to notify for.
+	 * @return string Plain text message.
+	 */
 	protected function get_comment_content_as_text( $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
@@ -282,11 +336,17 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		 * Use this to change document formatting, etc
 		 *
 		 * @param string $text Text content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param WP_Comment $comment Comment the content is generated from
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_content_text', $text, $comment );
 	}
 
+	/**
+	 * Get text-formatted message for a comment.
+	 *
+	 * @param WP_Comment $comment Comment to notify for.
+	 * @return string Plain text message.
+	 */
 	protected function get_comment_content_as_html( $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
@@ -298,7 +358,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		 * Use this to add tracking codes, metadata, etc
 		 *
 		 * @param string $text HTML content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param WP_Comment $comment Comment the content is generated from
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_content_html', $text, $comment );
 	}
@@ -534,6 +594,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return $subscribers;
 	}
 
+	/**
+	 * Handle inserting a reply.
+	 *
+	 * @param mixed $value Inserted ID if set, null if not yet handled.
+	 * @param Falcon_Reply $reply Reply data being inserted.
+	 * @return mixed `$value` if already handled, `false` if invalid, or int reply ID if inserted.
+	 */
 	public function handle_insert( $value, Falcon_Reply $reply ) {
 		if ( ! empty( $value ) ) {
 			return $value;
