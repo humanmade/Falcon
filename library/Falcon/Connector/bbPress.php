@@ -250,13 +250,13 @@ class Falcon_Connector_bbPress {
 		$subject = apply_filters( 'bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id );
 
 		$options = array(
-			'id'     => $topic_id,
-			'author' => $reply_author_name,
+			'id' => $topic_id,
 		);
 		$message = new Falcon_Message();
 		$message->set_subject( $subject );
 		$message->set_text( $this->get_reply_content_as_text( $reply_id, $topic_id ) );
 		$message->set_html( $this->get_reply_content_as_html( $reply_id ) );
+		$message->set_author( $reply_author_name );
 		$message->set_options( $options );
 		$this->handler->send_mail( $user_ids, $message );
 
