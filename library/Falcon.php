@@ -39,6 +39,7 @@ class Falcon extends Falcon_Autohooker {
 	 */
 	public static function get_handlers() {
 		$default = array(
+			'ses' => 'Falcon_Handler_SES',
 			'postmark' => 'Falcon_Handler_Postmark',
 			'mandrill' => 'Falcon_Handler_Mandrill',
 			'wpmail' => 'Falcon_Handler_WPMail',
@@ -254,12 +255,38 @@ class Falcon extends Falcon_Autohooker {
 		return is_multisite() && is_plugin_active_for_network( FALCON_PLUGIN );
 	}
 
+	/**
+	 * Get an option's value.
+	 *
+	 * Uses network-wide options if in network mode. Keys must be prefixed.
+	 *
+	 * @param string $key Option key/name.
+	 * @param mixed $default Default value to return if no option is set.
+	 * @return mixed Option value if set, or $default if no option is set.
+	 */
 	public static function get_option( $key, $default = false ) {
 		if ( self::is_network_mode() ) {
 			return get_site_option( $key, $default );
 		}
 
 		return get_option( $key, $default );
+	}
+
+	/**
+	 * Update an option.
+	 *
+	 * Uses network-wide options if in network mode. Keys must be prefixed.
+	 *
+	 * @param string $key Option key/name.
+	 * @param mixed $value Value to set the option to.
+	 * @return bool True if option was updated, false otherwise.
+	 */
+	public static function update_option( $key, $value ) {
+		if ( self::is_network_mode() ) {
+			return update_site_option( $key, $value );
+		}
+
+		return update_option( $key, $value );
 	}
 
 	/**

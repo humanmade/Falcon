@@ -25,8 +25,14 @@ Two steps!
 ### Step 1: Pick an email provider
 
 You'll need to pick an email provider that we support. Right now, we have
-handlers for [Mandrill][] and [Postmark][]. If you haven't got one already, I'd
-personally recommend Postmark, as setting up is a wee bit easier.
+handlers for:
+
+* [Amazon SES](https://aws.amazon.com/ses/) (see [setup instructions](docs/amazon-ses.md))
+* [Mandrill](https://mandrill.com/)
+* [Postmark](https://postmarkapp.com/)
+* WP Mail (message sending only, no replies)
+
+If you haven't got one already, I'd personally recommend Postmark, as setting up is a wee bit easier.
 
 Set aside a domain to handle emails. `notifications.example.com` is a good
 example. We'll be sending emails from `reply@` from this domain, and you'll be
@@ -34,9 +40,6 @@ replying to the same email (but with a plus address bit for authentication).
 
 (Wish we had support for another handler? Let us know, or try making a handler
 yourself! You'll find the code for it in `library/Falcon/Handler`.)
-
-[Mandrill]: https://mandrill.com/
-[Postmark]: https://postmarkapp.com/
 
 ### Step 2: Install and set up the plugin
 
