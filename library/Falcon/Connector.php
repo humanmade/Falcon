@@ -51,6 +51,27 @@ abstract class Falcon_Connector {
 	}
 
 	/**
+	 * Filter an array to just the unique users.
+	 *
+	 * @param WP_User[] $users List of users with potential duplicates.
+	 * @return WP_User[] Deduplicated list of users.
+	 */
+	protected static function filter_unique_users( $users ) {
+		$deduplicated = [];
+
+		foreach ( $users as $user ) {
+			if ( isset( $deduplicated[ $user->ID ] ) ) {
+				// Already handled
+				continue;
+			}
+
+			$deduplicated[ $user->ID ] = $user;
+		}
+
+		return $deduplicated;
+	}
+
+	/**
 	 * Get the key for a setting.
 	 *
 	 * This should use `Falcon_Manager::key_for_setting()` with a unique ID
