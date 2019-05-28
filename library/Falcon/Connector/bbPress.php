@@ -452,6 +452,13 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 		];
 	}
 
+	/**
+	 * Output the settings fields.
+	 *
+	 * Overridden to add note about subscriptions.
+	 *
+	 * @inheritDoc
+	 */
 	public function output_settings( $user = null ) {
 		parent::output_settings( $user );
 
@@ -460,6 +467,13 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 		echo '</p></td></tr>';
 	}
 
+	/**
+	 * Output the network-mode settings.
+	 *
+	 * Overridden to add note about subscriptions.
+	 *
+	 * @inheritDoc
+	 */
 	public function network_notification_settings( $user = null, $sites ) {
 		parent::network_notification_settings( $user, $sites );
 

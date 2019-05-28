@@ -162,6 +162,11 @@ abstract class Falcon_Connector {
 		}
 	}
 
+	/**
+	 * Register hooks for built-in settings handling.
+	 *
+	 * Call this from __construct if using the built-in settings UI.
+	 */
 	protected function register_settings_hooks() {
 		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
 		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
@@ -169,6 +174,14 @@ abstract class Falcon_Connector {
 		add_action( 'falcon.manager.save_network_profile_fields', array( $this, 'save_profile_settings' ), 10, 3 );
 	}
 
+	/**
+	 * Output the settings fields.
+	 *
+	 * This is used for the default settings output as well as on user profiles
+	 * when in single-site mode.
+	 *
+	 * @param WP_User $user User to set settings for. Null if on defaults screen.
+	 */
 	public function output_settings( $user = null ) {
 		// Are we on the notification defaults screen?
 		$is_defaults_screen = empty( $user );
@@ -194,6 +207,14 @@ abstract class Falcon_Connector {
 		}
 	}
 
+	/**
+	 * Output the network-mode settings.
+	 *
+	 * This is used for user profiles in network-mode.
+	 *
+	 * @param WP_User $user User to set settings for. Null if on defaults screen.
+	 * @param int[] $sites Sites where Falcon is enabled.
+	 */
 	public function network_notification_settings( $user = null, $sites ) {
 		// Are we on the notification defaults screen?
 		$is_defaults_screen = empty( $user );
