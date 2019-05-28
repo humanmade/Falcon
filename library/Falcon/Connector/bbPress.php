@@ -1,8 +1,18 @@
 <?php
 
 class Falcon_Connector_bbPress {
+	/**
+	 * Handler for sending emails.
+	 *
+	 * @var Falcon_Handler
+	 */
 	protected $handler;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param Falcon_Handler @handler
+	 */
 	public function __construct( $handler ) {
 		$this->handler = $handler;
 
@@ -16,6 +26,12 @@ class Falcon_Connector_bbPress {
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
 	}
 
+	/**
+	 * Get text-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string Text footer to append to message.
+	 */
 	protected function get_text_footer( $url ) {
 		$text = "---\n";
 		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
@@ -25,6 +41,12 @@ class Falcon_Connector_bbPress {
 		return apply_filters( 'falcon.connector.bbpress.text_footer', $text, $url );
 	}
 
+	/**
+	 * Get HTML-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string HTML footer to append to message.
+	 */
 	protected function get_html_footer( $url ) {
 		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
 		$footer .= sprintf(
@@ -41,6 +63,7 @@ class Falcon_Connector_bbPress {
 	 * Notify user roles on new topic
 	 *
 	 * @param int $topic_id Topic that has been created.
+	 * @return bool True if notified, false otherwise.
 	 */
 	public function notify_new_topic( $topic_id ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
@@ -115,6 +138,12 @@ class Falcon_Connector_bbPress {
 		return $recipients;
 	}
 
+	/**
+	 * Get text-formatted message for a topic.
+	 *
+	 * @param int $topic_id Topic ID to notify for.
+	 * @return string Plain text message.
+	 */
 	protected function get_topic_content_as_text( $topic_id ) {
 		$content = bbp_get_topic_content( $topic_id );
 
@@ -143,6 +172,12 @@ class Falcon_Connector_bbPress {
 		return apply_filters( 'falcon.connector.bbpress.topic_content_text', $text, $topic_id );
 	}
 
+	/**
+	 * Get HTML-formatted message for a topic.
+	 *
+	 * @param int $topic_id Topic ID to notify for.
+	 * @return string HTML message.
+	 */
 	protected function get_topic_content_as_html( $topic_id ) {
 		$content = bbp_get_topic_content( $topic_id );
 
@@ -162,7 +197,11 @@ class Falcon_Connector_bbPress {
 	/**
 	 * Send a notification to subscribers
 	 *
-	 * @wp-filter bbp_new_reply 1
+	 * @param int $reply_id Reply that has been created.
+	 * @param int $topic_id Topic the reply belongs to.
+	 * @param int $forum_id Forum the reply belongs to.
+	 * @param boolean $anonymous_data Unused.
+	 * @param int $reply_author User ID for the author of the reply.
 	 */
 	public function notify_on_reply( $reply_id = 0, $topic_id = 0, $forum_id = 0, $anonymous_data = false, $reply_author = 0 ) {
 		if ($this->handler === null) {
@@ -230,6 +269,13 @@ class Falcon_Connector_bbPress {
 		return true;
 	}
 
+	/**
+	 * Get text-formatted message for a reply.
+	 *
+	 * @param int $reply_id Reply ID to notify for.
+	 * @param int $topic_id Topic the reply belongs to.
+	 * @return string Plain text message.
+	 */
 	protected function get_reply_content_as_text( $reply_id, $topic_id ) {
 		$content = bbp_get_reply_content( $reply_id );
 
@@ -258,6 +304,12 @@ class Falcon_Connector_bbPress {
 		return apply_filters( 'falcon.connector.bbpress.reply_content_text', $text, $reply_id );
 	}
 
+	/**
+	 * Get HTML-formatted message for a reply.
+	 *
+	 * @param int $reply_id Reply ID to notify for.
+	 * @return string HTML message.
+	 */
 	protected function get_reply_content_as_html( $reply_id ) {
 		$content = bbp_get_reply_content( $reply_id );
 
@@ -274,11 +326,24 @@ class Falcon_Connector_bbPress {
 		return apply_filters( 'falcon.connector.bbpress.reply_content_html', $text, $reply_id );
 	}
 
+	/**
+	 * Check if the given type is allowed to be replied to.
+	 *
+	 * @param string $type Post type to check.
+	 * @return bool True for allowed types, false otherwise.
+	 */
 	protected function is_allowed_type( $type ) {
 		$allowed = array( 'bbp_topic' );
 		return in_array( $type, $allowed );
 	}
 
+	/**
+	 * Handle inserting a reply.
+	 *
+	 * @param mixed $value Inserted ID if set, null if not yet handled.
+	 * @param Falcon_Reply $reply Reply data being inserted.
+	 * @return mixed `$value` if already handled, `false` if invalid, or int reply ID if inserted.
+	 */
 	public function handle_insert( $value, Falcon_Reply $reply ) {
 		if ( ! empty( $value ) ) {
 			return $value;
