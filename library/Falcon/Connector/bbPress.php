@@ -149,16 +149,32 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 			$recipients[] = get_user_by( 'id', $user );
 		}
 
-		// Find any roles that should be subscribed too.
-		$user_roles = Falcon::get_option( 'bbsub_topic_notification', array() );
-		if ( ! empty( $user_roles ) ) {
-			foreach ($user_roles as $role) {
-				$users = get_users( [ 'role' => $role ] );
-				$recipients = array_merge( $recipients, $users );
-			}
+		// Find everyone who has a matching preference, or who is using the
+		// default (if it's on)
+		$query = array(
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => $this->key_for_setting( 'notifications.topic' ),
+					'value' => 'all'
+				),
+			),
+		);
+
+		$default = $this->get_default_settings();
+		if ( $default['topic'] === 'all' ) {
+			$query['meta_query'][] = array(
+				'key' => $this->key_for_setting( 'notifications.topic' ),
+				'compare' => 'NOT EXISTS',
+			);
 		}
 
-		return $recipients;
+		$users = get_users( $query );
+		if ( ! empty( $users ) ) {
+			$recipients = array_merge( $users );
+		}
+
+		return $this->filter_unique_users( $recipients );
 	}
 
 	/**
@@ -223,13 +239,11 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 	 * @param int $reply_id Reply that has been created.
 	 */
 	public function notify_on_reply( $reply_id ) {
-		if ($this->handler === null) {
+		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return false;
 		}
 
-		global $wpdb;
-
-		if (!bbp_is_subscriptions_active()) {
+		if ( ! bbp_is_subscriptions_active() ) {
 			return false;
 		}
 
@@ -244,30 +258,23 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 			return false;
 		}
 
-		$user_ids = bbp_get_topic_subscribers( $topic_id, true );
-		if ( empty( $user_ids ) ) {
+		$users = $this->get_reply_subscribers( $topic_id );
+		if ( empty( $users ) ) {
 			return false;
 		}
 
 		// Poster name
 		$reply_author_name = apply_filters('bbsub_reply_author_name', bbp_get_reply_author_display_name($reply_id));
 
-		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
-
 		// Don't send notifications to the person who made the post
 		$send_to_author = Falcon::get_option('bbsub_send_to_author', false);
 
 		$reply_author = bbp_get_reply_author_id( $reply_id );
-		if (!$send_to_author && !empty($reply_author)) {
-			$user_ids = array_filter($user_ids, function ($id) use ($reply_author) {
-				return ((int) $id !== (int) $reply_author);
-			});
+		if ( ! $send_to_author && ! empty( $reply_author ) ) {
+			$users = array_filter( $users, function ( $user ) use ( $reply_author ) {
+				return $user->ID !== $reply_author;
+			} );
 		}
-
-		// Get userdata for all users
-		$user_ids = array_map(function ($id) {
-			return get_userdata($id);
-		}, $user_ids);
 
 		// Build email
 		$subject = apply_filters( 'bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $reply_id, $topic_id );
@@ -281,11 +288,65 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 		$message->set_html( $this->get_reply_content_as_html( $reply_id ) );
 		$message->set_author( $reply_author_name );
 		$message->set_options( $options );
-		$this->handler->send_mail( $user_ids, $message );
 
+		// Fire legacy action.
+		$user_ids = array_map( function ( WP_User $user ) {
+			return $user->ID;
+		}, $users );
+		do_action( 'bbp_pre_notify_subscribers', $reply_id, $topic_id, $user_ids );
+
+		$this->handler->send_mail( $users, $message );
+
+		// Fire legacy action.
 		do_action( 'bbp_post_notify_subscribers', $reply_id, $topic_id, $user_ids );
 
 		return true;
+	}
+
+	/**
+	 * Get all subscribers for topic notifications
+	 *
+	 * @param int $topic_id Topic ID
+	 * @return WP_User[]
+	 */
+	protected function get_reply_subscribers( $reply_id ) {
+		$topic_id = bbp_get_reply_topic_id( $reply_id );
+
+		$recipients = [];
+
+		// Find everyone who has a matching preference, or who is using the
+		// default (if it's on)
+		$query = array(
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => $this->key_for_setting( 'notifications.reply' ),
+					'value' => 'all'
+				),
+			),
+		);
+
+		$default = $this->get_default_settings();
+		if ( $default['post'] === 'all' ) {
+			$query['meta_query'][] = array(
+				'key' => $this->key_for_setting( 'notifications.reply' ),
+				'compare' => 'NOT EXISTS',
+			);
+		}
+
+
+		$users = get_users( $query );
+		if ( ! empty( $users ) ) {
+			$recipients = $users;
+		}
+
+		// Also grab topic subscribers
+		$bbpress_subscribers = bbp_get_topic_subscribers( $topic_id, true );
+		foreach ( $bbpress_subscribers as $user ) {
+			$recipients[] = get_user_by( 'id', $user );
+		}
+
+		return $this->filter_unique_users( $recipients );
 	}
 
 	/**
