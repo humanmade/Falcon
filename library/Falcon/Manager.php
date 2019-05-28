@@ -244,12 +244,23 @@ class Falcon_Manager extends Falcon_Autohooker {
 			$value = absint( $site['blog_id'] );
 			$enabled = in_array( $value, $current );
 
+			$path = $details->path;
+			if ( $path === '/' ) {
+				$path = '';
+			}
+
+			$label = sprintf(
+				'%s (%s)',
+				esc_html( $details->blogname ),
+				esc_html( $details->domain . $path )
+			);
+
 			printf(
 				'<label><input type="checkbox" name="%s[]" value="%s" %s /> %s</label><br />',
 				'falcon_enabled_sites',
 				esc_attr( $value ),
 				checked( $enabled, true, false ),
-				esc_html( $details->blogname )
+				$label
 			);
 
 		}
