@@ -200,6 +200,7 @@ class Falcon_Handler_SES extends Falcon_Handler_WPMail {
 	 *
 	 * @param string $message Base 64-encoded raw MIME message.
 	 * @param array $headers Parsed headers from SES.
+	 * @return string|null Plain text body if available, then HTML if available, or null if neither are available.
 	 */
 	public function get_body_from_raw_message( $message, $headers ) {
 		// Split headers and body.
