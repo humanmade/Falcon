@@ -268,12 +268,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$message->set_author( apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author ) );
 
 		// Don't send notifications to the person who made the post
-		$send_to_author = Falcon::get_option('bbsub_send_to_author', false);
+		$send_to_author = Falcon::get_option( 'bbsub_send_to_author', false );
 
 		if ( ! $send_to_author && ! empty( $comment->user_id ) ) {
 			$author = (int) $comment->user_id;
 
-			$users = array_filter( $users, function ($user) use ($author) {
+			$users = array_filter( $users, function ( $user ) use ( $author ) {
 				return $user->ID !== $author;
 			} );
 		}
@@ -282,7 +282,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$message->set_text( $this->get_comment_content_as_text( $comment ) );
 		$message->set_html( $this->get_comment_content_as_html( $comment ) );
 
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $post ), ENT_QUOTES ), $id, $post->ID);
+		$subject = apply_filters( 'bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $post ), ENT_QUOTES ), $id, $post->ID );
 		$message->set_subject( $subject );
 
 		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $comment ) {
