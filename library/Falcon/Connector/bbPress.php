@@ -478,7 +478,6 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 			'reply' => [
 				'all'         => __( 'All new replies', 'falcon' ),
 				'participant' => __( "New comments on topics I've commented on", 'falcon' ),
-				'replies'     => __( 'Replies to my topics', 'falcon' ),
 				''            => __( 'Only subscribed topics', 'falcon' )
 			],
 		];
@@ -494,7 +493,6 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 			'reply' => array(
 				'all'         => __( 'All', 'falcon' ),
 				'participant' => __( "Participant", 'falcon' ),
-				'replies'     => __( 'Replies', 'falcon' ),
 				''            => __( 'Subscribed', 'falcon' )
 			),
 		);
