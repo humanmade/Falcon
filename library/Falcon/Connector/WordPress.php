@@ -36,6 +36,17 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return 'WordPress';
 	}
 
+	/**
+	 * Get a machine-readable ID for the handler.
+	 *
+	 * This is used for preference handling.
+	 *
+	 * @return string
+	 */
+	protected function get_id() {
+		return 'wordpress';
+	}
+
 	public static function is_allowed_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
@@ -416,8 +427,6 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @return WP_User[]
 	 */
 	public function get_comment_subscribers( $comment ) {
-		$recipients = array();
-
 		// Find everyone who has a matching preference, or who is using the
 		// default (if it's on)
 		$query = array(
@@ -450,20 +459,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$users = array_merge( $users, $sibling_authors );
 
 		// Trim to unique authors using IDs as key
-		$subscribers = array();
-		foreach ( $users as $user ) {
-			if ( isset( $subscribers[ $user->ID ] ) ) {
-				// Already handled
-				continue;
-			}
+		$subscribers = $this->filter_unique_users( $users );
 
-			if ( ! user_can( $user, 'read_post', $comment->comment_post_ID ) ) {
-				// No access, skip
-				continue;
-			}
-
-			$subscribers[ $user->ID ] = $user;
-		}
+		// Ensure users have access.
+		$subscribers = array_filter( $subscribers, function ( WP_User $user ) use ( $comment ) {
+			return user_can( $user, 'read_post', $comment->comment_post_ID );
+		} );
 
 		return $subscribers;
 	}

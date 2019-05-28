@@ -34,6 +34,10 @@ class Falcon_Manager extends Falcon_Autohooker {
 
 			?>
 			<style>
+				.falcon-grid {
+					margin-bottom: 1rem;
+				}
+
 				.falcon-grid .last_of_col {
 					border-right: 2px solid rgba(0, 0, 0, 0.2);
 				}
@@ -52,6 +56,9 @@ class Falcon_Manager extends Falcon_Autohooker {
 				.falcon-grid thead th,
 				.falcon-grid thead td {
 					border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+				}
+				.falcon-grid .falcon-grid-section-label {
+					text-align: left;
 				}
 
 				.falcon-grid th .details {
