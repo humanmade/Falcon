@@ -180,6 +180,11 @@ class Falcon_Handler_SES extends Falcon_Handler_WPMail {
 		$reply = new Falcon_Reply();
 		$reply->subject = $data->mail->commonHeaders->subject;
 		$reply->body = $this->get_body_from_raw_message( $data->content, $data->mail->headers );
+		if ( empty( $reply->body ) ) {
+			header('X-Fail: No body', true, 400);
+			echo 'Could not parse body from message.';
+			return;
+		}
 
 		$to = $data->mail->commonHeaders->to;
 		list( $reply->post, $reply->site, $reply->user, $reply->nonce ) = Falcon_Reply::parse_to( $to[0] );
