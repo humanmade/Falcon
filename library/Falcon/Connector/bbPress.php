@@ -17,50 +17,124 @@ class Falcon_Connector_bbPress {
 
 	/**
 	 * Notify user roles on new topic
+	 *
+	 * @param int $topic_id Topic that has been created.
 	 */
-	public function notify_new_topic( $topic_id = 0, $forum_id = 0, $anonymous_data = 0, $topic_author = 0) {
-		$user_roles = Falcon::get_option( 'bbsub_topic_notification', array() );
-
-		// bail out if no user roles found
-		if ( !$user_roles ) {
-			return;
+	public function notify_new_topic( $topic_id ) {
+		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
+			return false;
 		}
 
-		$recipients = array();
-		foreach ($user_roles as $role) {
-			$users = get_users(array('role' => $role, 'fields' => array('ID', 'user_email', 'display_name')));
-			$recipients = array_merge( $recipients, $users );
+		if ( ! bbp_is_topic_published( $topic_id ) ) {
+			return false;
 		}
 
-		// still no users?
-		if ( !$recipients ) {
-			return;
-		}
+		$recipients = $this->get_topic_subscribers( $topic_id );
 
-		// subscribe the users automatically
-		foreach ($recipients as $user) {
-			bbp_add_user_subscription( $user->ID, $topic_id );
-		}
+		$subject = sprintf(
+			'[%s] %s',
+			get_option( 'blogname' ),
+			html_entity_decode( bbp_get_topic_title( $topic_id ), ENT_QUOTES )
+		);
+		$subject = apply_filters( 'bbsub_topic_email_subject', $subject, $topic_id);
 
-		// Sanitize the HTML into text
-		$content = apply_filters( 'bbsub_html_to_text', bbp_get_topic_content( $topic_id ) );
-
-		// Build email
-		$text = "%1\$s\n\n";
-		$text .= "---\nReply to this email directly or view it online:\n%2\$s\n\n";
-		$text .= "You are receiving this email because you subscribed to it. Login and visit the topic to unsubscribe from these emails.";
-		$text = sprintf($text, $content, bbp_get_topic_permalink( $topic_id ) );
-		$text = apply_filters( 'bbsub_topic_email_message', $text, $topic_id, $content );
-		$subject = apply_filters( 'bbsub_topic_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . bbp_get_topic_title( $topic_id ), $topic_id);
-
-		$options = array(
+		$options = [
 			'author' => bbp_get_topic_author_display_name( $topic_id ),
 			'id'     => $topic_id,
+		];
+		$message = new Falcon_Message();
+		$message->set_subject( $subject );
+		$message->set_text( $this->get_topic_content_as_text( $topic_id ) );
+		$message->set_html( $this->get_topic_content_as_html( $topic_id ) );
+		$message->set_author( bbp_get_topic_author_display_name( $topic_id ) );
+		$message->set_options( $options );
+
+		// Fire legacy actions for bbPress.
+		$forum_id = bbp_get_topic_forum_id( $topic_id );
+		$user_ids = array_map( function ( WP_User $user ) {
+			return $user->ID;
+		}, $recipients );
+		do_action( 'bbp_pre_notify_forum_subscribers', $topic_id, $forum_id, $user_ids );
+
+		$this->handler->send_mail( $recipients, $message );
+
+		do_action( 'bbp_post_notify_forum_subscribers', $topic_id, $forum_id, $user_ids );
+
+		return true;
+	}
+
+	/**
+	 * Get all subscribers for topic notifications
+	 *
+	 * @param int $topic_id Topic ID
+	 * @return WP_User[]
+	 */
+	protected function get_topic_subscribers( $topic_id ) {
+		$forum_id = bbp_get_topic_forum_id( $topic_id );
+
+		$recipients = [];
+
+		// Get topic subscribers and bail if empty
+		$bbpress_subscribers = bbp_get_forum_subscribers( $forum_id, true );
+		$bbpress_subscribers = apply_filters( 'bbp_forum_subscription_user_ids', $bbpress_subscribers );
+		foreach ( $bbpress_subscribers as $user ) {
+			$recipients[] = get_user_by( 'id', $user );
+		}
+
+		// Find any roles that should be subscribed too.
+		$user_roles = Falcon::get_option( 'bbsub_topic_notification', array() );
+		if ( ! empty( $user_roles ) ) {
+			foreach ($user_roles as $role) {
+				$users = get_users( [ 'role' => $role ] );
+				$recipients = array_merge( $recipients, $users );
+			}
+		}
+
+		return $recipients;
+	}
+
+	protected function get_topic_content_as_text( $topic_id ) {
+		$content = bbp_get_topic_content( $topic_id );
+
+		// Sanitize the HTML into text
+		$content = apply_filters( 'bbsub_html_to_text', $content );
+
+		// Build email
+		$text = $content . "\n\n" . $this->get_text_footer( bbp_get_topic_permalink( $topic_id ) );
+
+		// Run legacy filter.
+		$text = apply_filters_deprecated(
+			'bbsub_topic_email_message',
+			[ $text, $topic_id, $content ],
+			'Falcon-0.5',
+			'falcon.connector.bbpress.topic_content_text'
 		);
-		$this->handler->send_mail( $recipients, $subject, $text, $options );
 
-		do_action( 'bbp_post_notify_topic_subscribers', $topic_id, $recipients );
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to change document formatting, etc
+		 *
+		 * @param string $text Text content
+		 * @param int $topic_id ID for the topic
+		 */
+		return apply_filters( 'falcon.connector.bbpress.topic_content_text', $text, $topic_id );
+	}
 
+	protected function get_topic_content_as_html( $topic_id ) {
+		$content = bbp_get_topic_content( $topic_id );
+
+		$text = $content . "\n\n" . $this->get_html_footer( bbp_get_topic_permalink( $topic_id ) );
+
+		/**
+		 * Filter the email content
+		 *
+		 * Use this to add tracking codes, metadata, etc
+		 *
+		 * @param string $text HTML content
+		 * @param WP_Post $post Post the content is generated from
+		 */
+		return apply_filters( 'falcon.connector.bbpress.topic_content_html', $text, $pst );
 	}
 
 	/**
