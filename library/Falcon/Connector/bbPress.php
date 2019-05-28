@@ -132,9 +132,9 @@ class Falcon_Connector_bbPress {
 		 * Use this to add tracking codes, metadata, etc
 		 *
 		 * @param string $text HTML content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param int $topic_id ID for the topic
 		 */
-		return apply_filters( 'falcon.connector.bbpress.topic_content_html', $text, $pst );
+		return apply_filters( 'falcon.connector.bbpress.topic_content_html', $text, $topic_id );
 	}
 
 	/**
@@ -268,9 +268,9 @@ class Falcon_Connector_bbPress {
 		 * Use this to add tracking codes, metadata, etc
 		 *
 		 * @param string $text HTML content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param int $reply_id ID for the reply
 		 */
-		return apply_filters( 'falcon.connector.bbpress.reply_content_html', $text, $post );
+		return apply_filters( 'falcon.connector.bbpress.reply_content_html', $text, $reply_id );
 	}
 
 	protected function is_allowed_type( $type ) {
