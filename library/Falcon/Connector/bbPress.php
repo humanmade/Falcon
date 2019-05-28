@@ -171,7 +171,7 @@ class Falcon_Connector_bbPress extends Falcon_Connector {
 
 		$users = get_users( $query );
 		if ( ! empty( $users ) ) {
-			$recipients = array_merge( $users );
+			$recipients = array_merge( $recipients, $users );
 		}
 
 		return $this->filter_unique_users( $recipients );
