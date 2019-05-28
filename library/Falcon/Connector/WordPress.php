@@ -447,9 +447,6 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 
 
 		$users = get_users( $query );
-		if ( empty( $users ) ) {
-			return array();
-		}
 
 		// Also grab everyone if they're in the thread and subscribed to
 		// same-thread comments
