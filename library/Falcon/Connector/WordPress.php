@@ -36,6 +36,17 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return 'WordPress';
 	}
 
+	/**
+	 * Get a machine-readable ID for the handler.
+	 *
+	 * This is used for preference handling.
+	 *
+	 * @return string
+	 */
+	protected function get_id() {
+		return 'wordpress';
+	}
+
 	public static function is_allowed_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );

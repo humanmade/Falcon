@@ -1,6 +1,6 @@
 <?php
 
-class Falcon_Connector_bbPress {
+class Falcon_Connector_bbPress extends Falcon_Connector {
 	/**
 	 * Handler for sending emails.
 	 *
@@ -24,6 +24,29 @@ class Falcon_Connector_bbPress {
 		remove_action( 'bbp_new_reply', 'bbp_notify_topic_subscribers', 11, 5 );
 
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
+
+		$this->register_settings_hooks();
+	}
+
+	/**
+	 * Get a human-readable name for the handler
+	 *
+	 * This is used for the handler selector and is shown to the user.
+	 * @return string
+	 */
+	public static function get_name() {
+		return 'bbPress';
+	}
+
+	/**
+	 * Get a machine-readable ID for the handler.
+	 *
+	 * This is used for preference handling.
+	 *
+	 * @return string
+	 */
+	protected function get_id() {
+		return 'bbpress';
 	}
 
 	/**
@@ -379,48 +402,53 @@ class Falcon_Connector_bbPress {
 		return $reply_id;
 	}
 
-	public function register_settings() {
-		register_setting( 'bbsub_options', 'bbsub_topic_notification', array(__CLASS__, 'validate_topic_notification') );
-
-		add_settings_section('bbsub_options_bbpress', 'bbPress', '__return_null', 'bbsub_options');
-		add_settings_field('bbsub_options_bbpress_topic_notification', 'New Topic Notification', array(__CLASS__, 'settings_field_topic_notification'), 'bbsub_options', 'bbsub_options_bbpress');
-	}
-
 	/**
-	 * Print field for new topic notification
+	 * Get available settings for notifications
 	 *
-	 * @see self::init()
-	 */
-	public static function settings_field_topic_notification() {
-		global $wp_roles;
-
-		if ( !$wp_roles ) {
-			$wp_roles = new WP_Roles();
-		}
-
-		$options = Falcon::get_option( 'bbsub_topic_notification', array() );
-
-		foreach ($wp_roles->get_names() as $key => $role_name) {
-			$current = in_array($key, $options) ? $key : '0';
-			?>
-			<label>
-				<input type="checkbox" value="<?php echo esc_attr( $key ); ?>" name="bbsub_topic_notification[]" <?php checked( $current, $key ); ?> />
-				<?php echo $role_name; ?>
-			</label>
-			<br />
-			<?php
-		}
-
-		echo '<span class="description">' . __( 'Sends new topic email and auto subscribe the users from these role to the new topic', 'bbsub' ) . '</span>';
-	}
-
-	/**
-	 * Validate the new topic notification
-	 *
-	 * @param array $input
 	 * @return array
 	 */
-	public function validate_topic_notification( $input ) {
-		return is_array( $input ) ? $input : array();
+	public function get_available_settings() {
+		return [
+			'topic' => [
+				'all' => __( 'All new topics', 'falcon' ),
+				''    => __( 'Only subscribed topics', 'falcon' ),
+			],
+
+			'reply' => [
+				'all'         => __( 'All new replies', 'falcon' ),
+				'participant' => __( "New comments on topics I've commented on", 'falcon' ),
+				'replies'     => __( 'Replies to my topics', 'falcon' ),
+				''            => __( 'Only subscribed topics', 'falcon' )
+			],
+		];
+	}
+
+	public function get_available_settings_short() {
+		return array(
+			'topic' => array(
+				'all' => __( 'All', 'falcon' ),
+				''    => __( 'Subscribed', 'falcon' ),
+			),
+
+			'reply' => array(
+				'all'         => __( 'All', 'falcon' ),
+				'participant' => __( "Participant", 'falcon' ),
+				'replies'     => __( 'Replies', 'falcon' ),
+				''            => __( 'Subscribed', 'falcon' )
+			),
+		);
+	}
+
+	protected function get_settings_fields() {
+		return [
+			'topic' => [
+				'default' => 'all',
+				'label' => __( 'Topics', 'falcon' ),
+			],
+			'reply' => [
+				'default' => 'all',
+				'label' => __( 'Replies', 'falcon' ),
+			],
+		];
 	}
 }
