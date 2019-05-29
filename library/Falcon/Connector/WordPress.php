@@ -80,7 +80,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @param int $id ID of the post being published.
 	 * @param WP_Post $post Post object for the post being published.
 	 */
-	public function notify_on_publish( $id = 0, $post = null ) {
+	public function notify_on_publish( $id = 0, WP_Post $post = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return;
 		}
@@ -214,7 +214,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @param WP_Post $post Post to notify for.
 	 * @return string HTML message.
 	 */
-	protected function get_post_content_as_html( $post ) {
+	protected function get_post_content_as_html( WP_Post $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
 		$text = $content . "\n\n" . $this->get_html_footer( get_permalink( $post->ID ) );
@@ -237,7 +237,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @param WP_Comment $comment Comment object for the comment being approved.
 	 * @return boolean True if notifications were sent, false otherwise.
 	 */
-	public function notify_on_reply( $id = 0, $comment = null ) {
+	public function notify_on_reply( $id = 0, WP_Comment $comment = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return false;
 		}
@@ -321,7 +321,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @param WP_Comment $comment Comment to notify for.
 	 * @return string Plain text message.
 	 */
-	protected function get_comment_content_as_text( $comment ) {
+	protected function get_comment_content_as_text( WP_Comment $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
 		// Sanitize the HTML into text
@@ -347,7 +347,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * @param WP_Comment $comment Comment to notify for.
 	 * @return string Plain text message.
 	 */
-	protected function get_comment_content_as_html( $comment ) {
+	protected function get_comment_content_as_html( WP_Comment $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
 		$text = $content . "\n\n" . $this->get_html_footer( get_comment_link( $comment ) );
@@ -387,10 +387,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get the Message ID for a comment
 	 *
-	 * @param stdClass $comment Comment object
+	 * @param WP_Comment $comment Comment object
 	 * @return string Message ID
 	 */
-	protected function get_message_id_for_comment( $comment ) {
+	protected function get_message_id_for_comment( WP_Comment $comment ) {
 		$post = get_post( $comment->comment_post_ID );
 		$type = $comment->comment_type;
 		if ( empty( $type ) ) {
@@ -403,10 +403,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$id = sprintf( '<%s@%s>', $left, $right );
 
 		/**
-		 * Filter message IDs for posts
+		 * Filter message IDs for comments
 		 *
 		 * @param string $id Message ID (conforming to RFC5322 Message-ID semantics)
-		 * @param stdClass $post Post object
+		 * @param WP_Comment $comment Comment object
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_message_id', $id, $comment );
 	}
@@ -414,10 +414,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get the References for a comment
 	 *
-	 * @param stdClass $comment Comment object
+	 * @param WP_Comment $comment Comment object
 	 * @return string[] Message IDs
 	 */
-	protected function get_references_for_comment( $comment ) {
+	protected function get_references_for_comment( WP_Comment $comment ) {
 		$references = array();
 		if ( ! empty( $comment->comment_parent ) ) {
 			// Add parent's references
@@ -481,10 +481,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get all subscribers for comment notifications
 	 *
-	 * @param stdClass $comment Comment being checked
+	 * @param WP_Comment $comment Comment being checked
 	 * @return WP_User[]
 	 */
-	public function get_comment_subscribers( $comment ) {
+	public function get_comment_subscribers( WP_Comment $comment ) {
 		// Find everyone who has a matching preference, or who is using the
 		// default (if it's on)
 		$query = array(
@@ -531,10 +531,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * subscribed) as well as subscribers to all threads (i.e. comment authors
 	 * who are subscribed to all comments on the post)
 	 *
-	 * @param stdClass $comment Comment being checked
+	 * @param WP_Comment $comment Comment being checked
 	 * @return array
 	 */
-	protected function get_thread_subscribers( $comment ) {
+	protected function get_thread_subscribers( WP_Comment $comment ) {
 		$sibling_comments = get_comments( array(
 			'post_id'         => $comment->comment_post_ID,
 			'comment__not_in' => $comment->comment_ID,
