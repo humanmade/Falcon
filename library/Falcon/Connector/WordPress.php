@@ -11,6 +11,11 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 */
 	protected $handler;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param Falcon_Handler @handler
+	 */
 	public function __construct( $handler ) {
 		$this->handler = $handler;
 
@@ -20,10 +25,8 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$this->add_notify_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
 
 		add_action( 'falcon.reply.insert', array( $this, 'handle_insert' ), 20, 2 );
-		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
-		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
-		add_action( 'falcon.manager.network_profile_fields', array( $this, 'network_notification_settings' ), 10, 2 );
-		add_action( 'falcon.manager.save_network_profile_fields', array( $this, 'save_profile_settings' ), 10, 3 );
+
+		$this->register_settings_hooks();
 	}
 
 	/**
@@ -47,12 +50,24 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return 'wordpress';
 	}
 
+	/**
+	 * Check if the given post type is allowed to be replied to.
+	 *
+	 * @param string $type Post type to check.
+	 * @return bool True for allowed types, false otherwise.
+	 */
 	public static function is_allowed_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.post_types', array( 'post' ) );
 		return in_array( $type, $allowed_types );
 	}
 
+	/**
+	 * Check if the given comment type is allowed to be replied to.
+	 *
+	 * @param string $type Comment type to check.
+	 * @return bool True for allowed types, false otherwise.
+	 */
 	public static function is_allowed_comment_type( $type ) {
 		// Only notify for allowed types
 		$allowed_types = apply_filters( 'falcon.connector.wordpress.comment_types', array( '' ), true );
@@ -60,9 +75,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	}
 
 	/**
-	 * Notify user roles on new topic
+	 * Notify users on post publish.
+	 *
+	 * @param int $id ID of the post being published.
+	 * @param WP_Post $post Post object for the post being published.
 	 */
-	public function notify_on_publish( $id = 0, $post = null ) {
+	public function notify_on_publish( $id = 0, WP_Post $post = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return;
 		}
@@ -132,6 +150,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		update_post_meta( $id, static::SENT_META_KEY, true );
 	}
 
+	/**
+	 * Get text-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string Text footer to append to message.
+	 */
 	protected function get_text_footer( $url ) {
 		$text = "---\n";
 		$text .= sprintf( 'Reply to this email directly or view it on %s:', get_option( 'blogname' ) );
@@ -140,6 +164,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.text_footer', $text, $url );
 	}
 
+	/**
+	 * Get HTML-formatted footer.
+	 *
+	 * @param string $url URL for the topic/reply
+	 * @return string HTML footer to append to message.
+	 */
 	protected function get_html_footer( $url ) {
 		$footer = '<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br>';
 		$footer .= sprintf(
@@ -152,7 +182,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.html_footer', $footer, $url );
 	}
 
-	protected function get_post_content_as_text( $post ) {
+	/**
+	 * Get text-formatted message for a post.
+	 *
+	 * @param WP_Post $post Post to notify for.
+	 * @return string Plain text message.
+	 */
+	protected function get_post_content_as_text( WP_Post $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
 		// Sanitize the HTML into text
@@ -172,7 +208,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return apply_filters( 'falcon.connector.wordpress.post_content_text', $text, $post );
 	}
 
-	protected function get_post_content_as_html( $post ) {
+	/**
+	 * Get HTML-formatted message for a post.
+	 *
+	 * @param WP_Post $post Post to notify for.
+	 * @return string HTML message.
+	 */
+	protected function get_post_content_as_html( WP_Post $post ) {
 		$content = apply_filters( 'the_content', $post->post_content );
 
 		$text = $content . "\n\n" . $this->get_html_footer( get_permalink( $post->ID ) );
@@ -189,9 +231,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	}
 
 	/**
-	 * Send a notification to subscribers
+	 * Notify users on comment approval.
+	 *
+	 * @param int $id ID of the comment being approved.
+	 * @param WP_Comment $comment Comment object for the comment being approved.
+	 * @return boolean True if notifications were sent, false otherwise.
 	 */
-	public function notify_on_reply( $id = 0, $comment = null ) {
+	public function notify_on_reply( $id = 0, WP_Comment $comment = null ) {
 		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
 			return false;
 		}
@@ -222,12 +268,12 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$message->set_author( apply_filters( 'falcon.connector.wordpress.comment_author', $comment->comment_author ) );
 
 		// Don't send notifications to the person who made the post
-		$send_to_author = Falcon::get_option('bbsub_send_to_author', false);
+		$send_to_author = Falcon::get_option( 'bbsub_send_to_author', false );
 
 		if ( ! $send_to_author && ! empty( $comment->user_id ) ) {
 			$author = (int) $comment->user_id;
 
-			$users = array_filter( $users, function ($user) use ($author) {
+			$users = array_filter( $users, function ( $user ) use ( $author ) {
 				return $user->ID !== $author;
 			} );
 		}
@@ -236,7 +282,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$message->set_text( $this->get_comment_content_as_text( $comment ) );
 		$message->set_html( $this->get_comment_content_as_html( $comment ) );
 
-		$subject = apply_filters('bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $post ), ENT_QUOTES ), $id, $post->ID);
+		$subject = apply_filters( 'bbsub_email_subject', 'Re: [' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $post ), ENT_QUOTES ), $id, $post->ID );
 		$message->set_subject( $subject );
 
 		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $comment ) {
@@ -258,7 +304,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 			}
 		}
 		else {
-			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
+			$message_ids = get_post_meta( $id, self::MESSAGE_ID_KEY, true );
 			$options['in-reply-to'] = $message_ids;
 		}
 
@@ -269,7 +315,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return true;
 	}
 
-	protected function get_comment_content_as_text( $comment ) {
+	/**
+	 * Get text-formatted message for a comment.
+	 *
+	 * @param WP_Comment $comment Comment to notify for.
+	 * @return string Plain text message.
+	 */
+	protected function get_comment_content_as_text( WP_Comment $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
 		// Sanitize the HTML into text
@@ -284,12 +336,18 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		 * Use this to change document formatting, etc
 		 *
 		 * @param string $text Text content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param WP_Comment $comment Comment the content is generated from
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_content_text', $text, $comment );
 	}
 
-	protected function get_comment_content_as_html( $comment ) {
+	/**
+	 * Get text-formatted message for a comment.
+	 *
+	 * @param WP_Comment $comment Comment to notify for.
+	 * @return string Plain text message.
+	 */
+	protected function get_comment_content_as_html( WP_Comment $comment ) {
 		$content = apply_filters( 'comment_text', get_comment_text( $comment ) );
 
 		$text = $content . "\n\n" . $this->get_html_footer( get_comment_link( $comment ) );
@@ -300,7 +358,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		 * Use this to add tracking codes, metadata, etc
 		 *
 		 * @param string $text HTML content
-		 * @param WP_Post $post Post the content is generated from
+		 * @param WP_Comment $comment Comment the content is generated from
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_content_html', $text, $comment );
 	}
@@ -329,10 +387,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get the Message ID for a comment
 	 *
-	 * @param stdClass $comment Comment object
+	 * @param WP_Comment $comment Comment object
 	 * @return string Message ID
 	 */
-	protected function get_message_id_for_comment( $comment ) {
+	protected function get_message_id_for_comment( WP_Comment $comment ) {
 		$post = get_post( $comment->comment_post_ID );
 		$type = $comment->comment_type;
 		if ( empty( $type ) ) {
@@ -345,10 +403,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		$id = sprintf( '<%s@%s>', $left, $right );
 
 		/**
-		 * Filter message IDs for posts
+		 * Filter message IDs for comments
 		 *
 		 * @param string $id Message ID (conforming to RFC5322 Message-ID semantics)
-		 * @param stdClass $post Post object
+		 * @param WP_Comment $comment Comment object
 		 */
 		return apply_filters( 'falcon.connector.wordpress.comment_message_id', $id, $comment );
 	}
@@ -356,10 +414,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get the References for a comment
 	 *
-	 * @param stdClass $comment Comment object
-	 * @return string Message ID
+	 * @param WP_Comment $comment Comment object
+	 * @return string[] Message IDs
 	 */
-	protected function get_references_for_comment( $comment ) {
+	protected function get_references_for_comment( WP_Comment $comment ) {
 		$references = array();
 		if ( ! empty( $comment->comment_parent ) ) {
 			// Add parent's references
@@ -423,10 +481,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	/**
 	 * Get all subscribers for comment notifications
 	 *
-	 * @param stdClass $comment Comment being checked
+	 * @param WP_Comment $comment Comment being checked
 	 * @return WP_User[]
 	 */
-	public function get_comment_subscribers( $comment ) {
+	public function get_comment_subscribers( WP_Comment $comment ) {
 		// Find everyone who has a matching preference, or who is using the
 		// default (if it's on)
 		$query = array(
@@ -449,9 +507,6 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 
 
 		$users = get_users( $query );
-		if ( empty( $users ) ) {
-			return array();
-		}
 
 		// Also grab everyone if they're in the thread and subscribed to
 		// same-thread comments
@@ -476,10 +531,10 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 * subscribed) as well as subscribers to all threads (i.e. comment authors
 	 * who are subscribed to all comments on the post)
 	 *
-	 * @param stdClass $comment Comment being checked
+	 * @param WP_Comment $comment Comment being checked
 	 * @return array
 	 */
-	protected function get_thread_subscribers( $comment ) {
+	protected function get_thread_subscribers( WP_Comment $comment ) {
 		$sibling_comments = get_comments( array(
 			'post_id'         => $comment->comment_post_ID,
 			'comment__not_in' => $comment->comment_ID,
@@ -539,6 +594,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		return $subscribers;
 	}
 
+	/**
+	 * Handle inserting a reply.
+	 *
+	 * @param mixed $value Inserted ID if set, null if not yet handled.
+	 * @param Falcon_Reply $reply Reply data being inserted.
+	 * @return mixed `$value` if already handled, `false` if invalid, or int reply ID if inserted.
+	 */
 	public function handle_insert( $value, Falcon_Reply $reply ) {
 		if ( ! empty( $value ) ) {
 			return $value;
@@ -628,212 +690,16 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		);
 	}
 
-	/**
-	 * Get default notification settings
-	 *
-	 * @return array Map of type => pref value
-	 */
-	protected function get_default_settings() {
-		$keys = array(
-			'post'    => 'all',
-			'comment' => 'all',
-		);
-		$defaults = array();
-
-		foreach ( $keys as $key => $hardcoded_default ) {
-			$option_key = $this->key_for_setting( 'notifications.' . $key );
-			$value = Falcon::get_option( $option_key, null );
-
-			$defaults[ $key ] = isset( $value ) ? $value : $hardcoded_default;
-		}
-
-		return $defaults;
-	}
-
-	/**
-	 * Get notification settings for the current user
-	 *
-	 * @param int $user_id User to get settings for
-	 * @return array Map of type => pref value
-	 */
-	protected function get_settings_for_user( $user_id, $site_id = null ) {
-		$available = $this->get_available_settings();
-		$settings = array();
-
-		foreach ( $available as $type => $choices ) {
-			$key = $this->key_for_setting( 'notifications.' . $type, $site_id );
-			$value = get_user_meta( $user_id, $key );
-			if ( empty( $value ) ) {
-				continue;
-			}
-
-			$settings[ $type ] = $value[0];
-		}
-
-		return $settings;
-	}
-
-	protected function key_for_setting( $key, $site_id = null ) {
-		return Falcon_Manager::key_for_setting( 'wordpress', $key, $site_id );
-	}
-
-	protected function print_field( $field, $settings, $is_defaults_screen = false ) {
-		$defaults = $this->get_default_settings();
-
-		$site_id = get_current_blog_id();
-		$default = isset( $defaults[ $field ] ) ? $defaults[ $field ] : false;
-		$current = isset( $settings[ $field ] ) ? $settings[ $field ] : $default;
-
-		$notifications = $this->get_available_settings();
-
-		foreach ( $notifications[ $field ] as $value => $title ) {
-			$maybe_default = '';
-			if ( ! $is_defaults_screen && $value === $default ) {
-				$maybe_default = '<strong>' . esc_html__( ' (default)', 'falcon' ) . '</strong>';
-			}
-
-			printf(
-				'<label><input type="radio" name="%s" value="%s" %s /> %s</label><br />',
-				esc_attr( $this->key_for_setting( 'notifications.' . $field ) ),
-				esc_attr( $value ),
-				checked( $value, $current, false ),
-				esc_html( $title ) . $maybe_default
-			);
-		}
-	}
-
-	public function output_settings( $user = null ) {
-		// Are we on the notification defaults screen?
-		$is_defaults_screen = empty( $user );
-
-		// Grab defaults and currently set
-		$settings = $is_defaults_screen ? $this->get_default_settings() : $this->get_settings_for_user( $user->ID );
-
-		?>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Posts', 'falcon' ) ?></th>
-				<td>
-					<?php $this->print_field( 'post', $settings, $is_defaults_screen ) ?>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Comments', 'falcon' ) ?></th>
-				<td>
-					<?php $this->print_field( 'comment', $settings, $is_defaults_screen ) ?>
-				</td>
-			</tr>
-		<?php
-	}
-
-	public function save_profile_settings( $user_id, $args = array(), $sites = null ) {
-		$available = $this->get_available_settings();
-
-		if ( $sites === null ) {
-			$sites = array( get_current_blog_id() );
-		}
-
-		foreach ( $available as $type => $options ) {
-			foreach ( $sites as $site ) {
-				$key = $this->key_for_setting( 'notifications.' . $type, $site );
-
-				// PHP strips '.' out of POST data as a relic from the
-				// register_globals days, so we need to take that into account
-				$request_key = str_replace( '.', '_', $key );
-				if ( ! isset( $args[ $request_key ] ) ) {
-					continue;
-				}
-				$value = $args[ $request_key ];
-
-				// Check the value is valid
-				$options = array_keys( $options );
-				if ( ! in_array( $value, $options ) ) {
-					continue;
-				}
-
-				// Actually set it!
-				if ( ! update_user_meta( $user_id, wp_slash( $key ), wp_slash( $value ) ) ) {
-					// TODO: Log this?
-					continue;
-				}
-			}
-		}
-	}
-
-	public function network_notification_settings( $user = null, $sites ) {
-		// Are we on the notification defaults screen?
-		$is_defaults_screen = empty( $user );
-
-		$available = $this->get_available_settings();
-		$short_names = $this->get_available_settings_short();
-		$defaults = $this->get_default_settings();
-
-		?>
-		<table class="widefat falcon-grid">
-			<thead>
-				<tr>
-					<th></th>
-					<th colspan="<?php echo esc_attr( count( $available['post'] ) ) ?>"
-						class="last_of_col"><?php
-						esc_html_e( 'Posts', 'falcon' ) ?></th>
-					<th colspan="<?php echo esc_attr( count( $available['comment'] ) ) ?>"><?php
-						esc_html_e( 'Comments', 'falcon' ) ?></th>
-				</tr>
-				<tr>
-					<th></th>
-					<?php
-					foreach ( $available as $type => $opts ) {
-						$last = key( array_slice( $opts, -1, 1, true ) );
-
-						foreach ( $opts as $key => $title ) {
-							printf(
-								'<td class="%s"><abbr title="%s">%s</abbr>%s</td>',
-								( $key === $last ? 'last_of_col' : '' ),
-								esc_attr( $title ),
-								esc_html( $short_names[ $type ][ $key ] ),
-								( $key === $defaults[ $type ] ) ? ' <strong>*</strong>' : ''
-							);
-						}
-					}
-					?>
-				</tr>
-			</thead>
-
-			<?php
-			foreach ( $sites as $site ):
-				$details = get_blog_details( $site );
-				$settings = $this->get_settings_for_user( $user->ID, $site );
-
-				$title = esc_html( $details->blogname ) . '<br >';
-				$path = $details->path;
-				if ( $path === '/' ) {
-					$path = '';
-				}
-
-				$title .= '<span class="details">' . esc_html( $details->domain . $path ) . '</span>';
-				?>
-				<tr>
-					<th scope="row"><?php echo $title ?></th>
-
-					<?php
-					foreach ( $available as $type => $opts ) {
-						$default = isset( $defaults[ $type ] ) ? $defaults[ $type ] : false;
-						$current = isset( $settings[ $type ] ) ? $settings[ $type ] : $default;
-
-						$name = $this->key_for_setting( 'notifications.' . $type, $site );
-
-						foreach ( $opts as $key => $title ) {
-							printf(
-								'<td><input type="radio" name="%s" value="%s" %s /></td>',
-								esc_attr( $name ),
-								esc_attr( $key ),
-								checked( $key, $current, false )
-							);
-						}
-					}
-					?>
-				</tr>
-			<?php endforeach ?>
-		</table>
-		<?php
+	protected function get_settings_fields() {
+		return [
+			'post' => [
+				'default' => 'all',
+				'label' => __( 'Posts', 'falcon' ),
+			],
+			'comment' => [
+				'default' => 'all',
+				'label' => __( 'Comments', 'falcon' ),
+			],
+		];
 	}
 }
