@@ -189,10 +189,100 @@ abstract class Falcon_Connector {
 	 * Call this from __construct if using the built-in settings UI.
 	 */
 	protected function register_settings_hooks() {
+		$id = $this->get_id();
+		add_filter( "falcon.api.get_pref_field.$id", array( $this, 'get_pref_field' ), 10, 2 );
+		add_filter( "falcon.api.get_pref_schema.$id", array( $this, 'get_pref_schema' ) );
+		add_filter( "falcon.api.update_pref_field.$id", array( $this, 'update_pref_field' ), 10, 3 );
 		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
 		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
 		add_action( 'falcon.manager.network_profile_fields', array( $this, 'network_notification_settings' ), 10, 2 );
 		add_action( 'falcon.manager.save_network_profile_fields', array( $this, 'save_profile_settings' ), 10, 3 );
+	}
+
+	/**
+	 * Get preference field value for the connector.
+	 *
+	 * Makes the data available via the REST API.
+	 *
+	 * @param mixed $value Existing value for the connector
+	 * @param WP_User $user User to get data for.
+	 * @return array Current settings for the user.
+	 */
+	public function get_pref_field( $value, WP_User $user ) {
+		return $this->get_settings_for_user( $user->ID );
+	}
+
+	/**
+	 * Get preference field schema for the connector.
+	 *
+	 * @param mixed $connector_schema Existing schema for the connector
+	 * @return array Schema for the conneector.
+	 */
+	public function get_pref_schema() {
+		$schema = [
+			'type' => 'object',
+			'properties' => [],
+		];
+		$fields = $this->get_settings_fields();
+		foreach ( $this->get_available_settings() as $key => $values ) {
+			$field = $fields[ $key ];
+			$schema['properties'][ $key ] = [
+				'type' => 'string',
+				'description' => $field['label'],
+				'default' => $field['default'],
+				'enum' => array_keys( $values ),
+				'enumLabels' => $values,
+			];
+		}
+		return $schema;
+	}
+
+	public function update_pref_field( $result, $data, WP_User $user ) {
+		$available = $this->get_available_settings();
+		$site = get_current_blog_id();
+
+		foreach ( $data as $type => $value ) {
+			if ( empty( $available[ $type ] ) ) {
+				return new WP_Error(
+					'falcon.api.update_pref_field.invalid_type',
+					__( 'Attempted to update invalid type', 'falcon' ),
+					compact( 'type' )
+				);
+			}
+
+			$options = $available[ $type ];
+			$key = $this->key_for_setting( 'notifications.' . $type, $site );
+
+			// Check the value is valid
+			$options = array_keys( $options );
+			if ( ! in_array( $value, $options ) ) {
+				// This should be handled by the schema validation, but just
+				// in case...
+				return new WP_Error(
+					'falcon.api.update_pref_field.invalid_value',
+					__( 'Invalid value for type', 'falcon' ),
+					compact( 'type', 'value' )
+				);
+			}
+
+			// Is this the current value?
+			$current = get_user_meta( $user->ID, wp_slash( $key ), true );
+			if ( $current === $value ) {
+				// Skip attempting to update.
+				continue;
+			}
+
+			// Actually set it!
+			if ( ! update_user_meta( $user->ID, wp_slash( $key ), wp_slash( $value ) ) ) {
+				return new WP_Error(
+					'falcon.api.update_pref_field.could_not_update',
+					__( 'Could not update preference', 'falcon' ),
+					compact( 'type', 'value' )
+				);
+			}
+		}
+
+		return true;
 	}
 
 	/**
