@@ -21,6 +21,19 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 
 		$this->add_notify_action( 'publish_post', array( $this, 'notify_on_publish' ), 10, 2 );
 
+		// If notifications on private posts are explicitly allowed via filter.
+		if ( apply_filters( 'falcon.connector.wordpress.notify_on_private', false ) ) {
+			/**
+			 * There is no dedicated action when a private post is published.
+			 * Private posts are automatically published once you change the
+			 * visibility to private, so we need to hook into all the
+			 * `{$old_status}_to_{$new_status}` actions.
+			*/
+			$this->add_notify_action( 'auto-draft_to_private', array( $this, 'notify_on_private' ), 10, 1 );
+			$this->add_notify_action( 'draft_to_private', array( $this, 'notify_on_private' ), 10, 1 );
+			$this->add_notify_action( 'pending_to_private', array( $this, 'notify_on_private' ), 10, 1 );
+		}
+
 		$this->add_notify_action( 'wp_insert_comment', array( $this, 'notify_on_reply' ), 10, 2 );
 		$this->add_notify_action( 'comment_approve_comment', array( $this, 'notify_on_reply' ), 10, 2 );
 
@@ -109,6 +122,84 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		 * @param WP_Post $post Post we're going to notify for
 		 */
 		$should_notify = apply_filters( 'falcon.connector.wordpress.should_notify_publish', ! $has_sent, $post );
+
+		if ( ! $should_notify ) {
+			return;
+		}
+
+		$recipients = $this->get_post_subscribers( $post );
+
+		// still no users?
+		if ( empty( $recipients ) ) {
+			return;
+		}
+
+		$message = new Falcon_Message();
+
+		$message->set_text( $this->get_post_content_as_text( $post ) );
+		$message->set_html( $this->get_post_content_as_html( $post ) );
+
+		$subject = apply_filters( 'bbsub_topic_email_subject', '[' . get_option( 'blogname' ) . '] ' . html_entity_decode( get_the_title( $id ), ENT_QUOTES ), $id );
+		$message->set_subject( $subject );
+
+		$message->set_author( get_the_author_meta( 'display_name', $post->post_author ) );
+
+		$options = array();
+		if ( $this->handler->supports_message_ids() ) {
+			$options['message-id'] = $this->get_message_id_for_post( $post );
+		}
+		$message->set_options( $options );
+
+		$message->set_reply_address_handler( function ( WP_User $user, Falcon_Message $message ) use ( $post ) {
+			return Falcon::get_reply_address( 'post_' . $post->ID, $user );
+		} );
+
+		$responses = $this->handler->send_mail( $recipients, $message );
+		if ( ! $this->handler->supports_message_ids() && ! empty( $responses ) ) {
+			update_post_meta( $id, self::MESSAGE_ID_KEY, $responses );
+		}
+
+		// Stop any future double-sends
+		update_post_meta( $id, static::SENT_META_KEY, true );
+	}
+
+	/**
+	 * Notify users when a private post is published.
+	 *
+	 * @param int $id ID of the private post being published.
+	 * @param WP_Post $post Post object for the private post being published.
+	 */
+	public function notify_on_private( WP_Post $post ) {
+		if ( empty( $this->handler ) || ! Falcon::is_enabled_for_site() ) {
+			return;
+		}
+
+		$id = $post->ID;
+
+		// Double-check status
+		if ( get_post_status( $id ) !== 'private' ) {
+			return;
+		}
+
+		// Only notify for allowed types
+		if ( ! $this->is_allowed_type( $post->post_type ) ) {
+			return;
+		}
+
+		// Don't notify if we're already done so for the post
+		$has_sent = get_post_meta( $id, static::SENT_META_KEY, true );
+
+		/**
+		 * Should we send a publish notification?
+		 *
+		 * This is based on meta by default to avoid double-sending, but
+		 * override to change the logic to whatever you like for
+		 * post publishing.
+		 *
+		 * @param bool $should_notify Should we notify for this event?
+		 * @param WP_Post $post Post we're going to notify for
+		 */
+		$should_notify = apply_filters( 'falcon.connector.wordpress.should_notify_private', ! $has_sent, $post );
 
 		if ( ! $should_notify ) {
 			return;
@@ -245,10 +336,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 		if ( wp_get_comment_status( $comment ) !== 'approved' ) {
 			return false;
 		}
-
 		// Is the post published?
 		$post = get_post( $comment->comment_post_ID );
-		if ( get_post_status( $post ) !== 'publish' ) {
+		$is_allowed_status = get_post_status( $post ) === 'publish'
+			||
+			( apply_filters( 'falcon.connector.wordpress.notify_on_private', false ) && get_post_status( $post ) === 'private' );
+
+		if ( ! $is_allowed_status ) {
 			return false;
 		}
 
