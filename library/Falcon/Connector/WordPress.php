@@ -505,13 +505,16 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 			);
 		}
 
-
 		$users = get_users( $query );
+
+		// Also get the original post author, they should always be notified.
+		$author_id = get_post_field( 'post_author', $comment->comment_post_ID );
+		$author_data = get_user_by( 'id', $author_id );
 
 		// Also grab everyone if they're in the thread and subscribed to
 		// same-thread comments
 		$sibling_authors = $this->get_thread_subscribers( $comment );
-		$users = array_merge( $users, $sibling_authors );
+		$users = array_merge( $users, $sibling_authors, [ $author_data ] );
 
 		// Trim to unique authors using IDs as key
 		$subscribers = $this->filter_unique_users( $users );
