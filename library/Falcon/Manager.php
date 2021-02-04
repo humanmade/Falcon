@@ -45,6 +45,15 @@ class Falcon_Manager extends Falcon_Autohooker {
 					border-right: none;
 				}
 
+				.falcon-grid thead {
+					background: inherit;
+					position: sticky;
+					top: 0;
+				}
+				html.wp-toolbar .falcon-grid thead {
+					top: 32px;
+				}
+
 				.falcon-grid thead th,
 				.falcon-grid thead td,
 				.falcon-grid tbody td {
