@@ -70,7 +70,7 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 	 */
 	public static function is_allowed_comment_type( $type ) {
 		// Only notify for allowed types
-		$allowed_types = apply_filters( 'falcon.connector.wordpress.comment_types', array( '' ), true );
+		$allowed_types = apply_filters( 'falcon.connector.wordpress.comment_types', array( '', 'comment' ), true );
 		return in_array( $type, $allowed_types );
 	}
 
