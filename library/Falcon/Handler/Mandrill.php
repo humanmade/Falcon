@@ -22,6 +22,13 @@ class Falcon_Handler_Mandrill implements Falcon_Handler {
 	 */
 	protected static $current_options = array();
 
+	/**
+	 * Mandrill API key.
+	 *
+	 * @var string
+	 */
+	protected $api_key;
+
 	public function __construct($options) {
 		if (empty($options) || empty($options['api_key'])) {
 			throw new Exception(__('Mandrill API key not set', 'falcon'));
