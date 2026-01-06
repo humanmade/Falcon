@@ -23,6 +23,13 @@ class Falcon_Handler_Postmark implements Falcon_Handler {
 	 */
 	protected static $current_options = array();
 
+	/**
+	 * Postmark API key.
+	 *
+	 * @var string
+	 */
+	protected $api_key;
+
 	public function __construct($options) {
 		if (empty($options) || empty($options['api_key'])) {
 			throw new Exception(__('Postmark API key not set', 'falcon'));
