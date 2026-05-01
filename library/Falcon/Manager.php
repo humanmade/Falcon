@@ -29,6 +29,9 @@ class Falcon_Manager extends Falcon_Autohooker {
 			// notification settings
 			$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
 
+			// Exclude archived, deleted, and spammed sites.
+			$sites = self::filter_inactive_sites( $sites );
+
 			echo '<p class="description">' . esc_html__( 'Set your email notification settings for the following sites.', 'falcon' ) . '</p>';
 			do_action( 'falcon.manager.network_profile_fields', $user_id, $sites );
 
@@ -108,6 +111,10 @@ class Falcon_Manager extends Falcon_Autohooker {
 		$args = wp_unslash( $_POST );
 		if ( Falcon::is_network_mode() ) {
 			$sites = Falcon::get_option( 'falcon_enabled_sites', array() );
+
+			// Exclude archived, deleted, and spammed sites.
+			$sites = self::filter_inactive_sites( $sites );
+
 			do_action( 'falcon.manager.save_network_profile_fields', $user_id, $args, $sites );
 		}
 		else {
@@ -129,6 +136,17 @@ class Falcon_Manager extends Falcon_Autohooker {
 			<?php do_action( 'falcon.manager.profile_fields', $user ) ?>
 		</table>
 		<?php
+	}
+
+	/**
+	 * Filter a list of site IDs to exclude archived, deleted, and spammed sites.
+	 *
+	 * @param int[] $sites List of site IDs to filter.
+	 * @return int[] Filtered list of active site IDs.
+	 */
+	protected static function filter_inactive_sites( $sites ) {
+		$available_site_ids = wp_list_pluck( self::available_sites(), 'blog_id' );
+		return array_values( array_intersect( $sites, $available_site_ids ) );
 	}
 
 	protected static function available_sites() {
