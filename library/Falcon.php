@@ -12,6 +12,9 @@ class Falcon extends Falcon_Autohooker {
 		if (is_admin()) {
 			Falcon_Admin::bootstrap();
 		}
+		else {
+			Falcon_Manager::bootstrap();
+		}
 
 		try {
 			// Check for a handler first
