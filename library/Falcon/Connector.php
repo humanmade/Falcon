@@ -168,9 +168,13 @@ abstract class Falcon_Connector {
 				}
 				$value = $args[ $request_key ];
 
-				// Check the value is valid
-				$options = array_keys( $options );
-				if ( ! in_array( $value, $options ) ) {
+				// Check the value is valid.
+				// Use a fresh local so we don't mutate the outer foreach's $options —
+				// on subsequent sites that would leave $options as a numeric-indexed
+				// list, and on PHP 8+ in_array() with non-numeric strings against ints
+				// no longer loose-equates, so all sites after the first silently skip.
+				$valid_values = array_keys( $options );
+				if ( ! in_array( $value, $valid_values, true ) ) {
 					continue;
 				}
 
