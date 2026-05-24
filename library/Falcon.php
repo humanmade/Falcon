@@ -9,6 +9,8 @@ class Falcon extends Falcon_Autohooker {
 		// Kill the defaults
 		remove_action( 'bbp_new_reply', 'bbp_notify_subscribers', 11 );
 
+		add_action( 'rest_api_init', [ 'Falcon_API', 'bootstrap' ] );
+
 		if (is_admin()) {
 			Falcon_Admin::bootstrap();
 		}
