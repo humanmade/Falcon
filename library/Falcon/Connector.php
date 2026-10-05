@@ -210,10 +210,10 @@ abstract class Falcon_Connector {
 	 *
 	 * @param mixed $value Existing value for the connector
 	 * @param WP_User $user User to get data for.
-	 * @return array Current settings for the user.
+	 * @return array Current settings for the user, including defaults.
 	 */
 	public function get_preferences_field( $value, WP_User $user ) {
-		return $this->get_settings_for_user( $user->ID );
+		return array_merge( $this->get_default_settings(), $this->get_settings_for_user( $user->ID ) );
 	}
 
 	/**
@@ -286,9 +286,11 @@ abstract class Falcon_Connector {
 				);
 			}
 
-			// Is this the current value?
+			// Is this the current value? get_user_meta() returns '' for
+			// missing keys, which is also the "no notifications" value, so
+			// check the key exists too; otherwise the default would apply.
 			$current = get_user_meta( $user->ID, wp_slash( $key ), true );
-			if ( $current === $value ) {
+			if ( $current === $value && metadata_exists( 'user', $user->ID, $key ) ) {
 				// Skip attempting to update.
 				continue;
 			}
