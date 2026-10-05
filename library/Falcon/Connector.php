@@ -269,7 +269,7 @@ abstract class Falcon_Connector {
 
 			// Check the value is valid
 			$options = array_keys( $options );
-			if ( ! in_array( $value, $options ) ) {
+			if ( ! in_array( $value, $options, true ) ) {
 				// This should be handled by the schema validation, but just
 				// in case...
 				return new WP_Error(
