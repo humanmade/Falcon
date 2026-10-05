@@ -193,10 +193,123 @@ abstract class Falcon_Connector {
 	 * Call this from __construct if using the built-in settings UI.
 	 */
 	protected function register_settings_hooks() {
+		$id = $this->get_id();
+		add_filter( "falcon.rest.get_preferences_field.$id", array( $this, 'get_preferences_field' ), 10, 2 );
+		add_filter( "falcon.rest.get_preferences_schema.$id", array( $this, 'get_preferences_schema' ) );
+		add_filter( "falcon.rest.update_preferences_field.$id", array( $this, 'update_preferences_field' ), 10, 3 );
 		add_action( 'falcon.manager.profile_fields', array( $this, 'output_settings' ) );
 		add_action( 'falcon.manager.save_profile_fields', array( $this, 'save_profile_settings' ), 10, 2 );
 		add_action( 'falcon.manager.network_profile_fields', array( $this, 'network_notification_settings' ), 10, 2 );
 		add_action( 'falcon.manager.save_network_profile_fields', array( $this, 'save_profile_settings' ), 10, 3 );
+	}
+
+	/**
+	 * Get preference field value for the connector.
+	 *
+	 * Makes the data available via the REST API.
+	 *
+	 * @param mixed $value Existing value for the connector
+	 * @param WP_User $user User to get data for.
+	 * @return array Current settings for the user, including defaults.
+	 */
+	public function get_preferences_field( $value, WP_User $user ) {
+		return array_merge( $this->get_default_settings(), $this->get_settings_for_user( $user->ID ) );
+	}
+
+	/**
+	 * Get preference field schema for the connector.
+	 *
+	 * @param mixed $connector_schema Existing schema for the connector
+	 * @return array Schema for the conneector.
+	 */
+	public function get_preferences_schema() {
+		$schema = [
+			'type' => 'object',
+			'properties' => [],
+		];
+		$fields = $this->get_settings_fields();
+		foreach ( $this->get_available_settings() as $key => $values ) {
+			$field = $fields[ $key ];
+			$schema['properties'][ $key ] = [
+				'type' => 'string',
+				'description' => $field['label'],
+				'default' => $field['default'],
+				'enum' => array_keys( $values ),
+				'enumLabels' => $values,
+			];
+		}
+		return $schema;
+	}
+
+	/**
+	 * Update preference field value for the connector.
+	 *
+	 * Saves settings for the current site.
+	 *
+	 * @param mixed $result Existing result. Null if unhandled.
+	 * @param array $data Map of type => preference value.
+	 * @param WP_User $user User being updated.
+	 * @return boolean|WP_Error True if updated, error otherwise.
+	 */
+	public function update_preferences_field( $result, $data, WP_User $user ) {
+		$available = $this->get_available_settings();
+		$site = get_current_blog_id();
+
+		foreach ( $data as $type => $value ) {
+			if ( empty( $available[ $type ] ) ) {
+				return new WP_Error(
+					'falcon.rest.update_preferences_field.invalid_type',
+					__( 'Attempted to update invalid type', 'falcon' ),
+					array(
+						'type' => $type,
+						'status' => WP_Http::BAD_REQUEST,
+					)
+				);
+			}
+
+			$options = $available[ $type ];
+			$key = $this->key_for_setting( 'notifications.' . $type, $site );
+
+			// Check the value is valid
+			$options = array_keys( $options );
+			if ( ! in_array( $value, $options, true ) ) {
+				// This should be handled by the schema validation, but just
+				// in case...
+				return new WP_Error(
+					'falcon.rest.update_preferences_field.invalid_value',
+					__( 'Invalid value for type', 'falcon' ),
+					array(
+						'type' => $type,
+						'value' => $value,
+						'status' => WP_Http::BAD_REQUEST,
+					)
+				);
+			}
+
+			// Is this the current value? get_user_meta() returns '' for
+			// missing keys, which is also the "no notifications" value, so
+			// check the key exists too; otherwise the default would apply.
+			$current = get_user_meta( $user->ID, wp_slash( $key ), true );
+			if ( $current === $value && metadata_exists( 'user', $user->ID, $key ) ) {
+				// Skip attempting to update.
+				continue;
+			}
+
+			// Actually set it!
+			if ( ! update_user_meta( $user->ID, wp_slash( $key ), wp_slash( $value ) ) ) {
+				return new WP_Error(
+					'falcon.rest.update_preferences_field.could_not_update',
+					__( 'Could not update preference', 'falcon' ),
+					array(
+						'type' => $type,
+						'value' => $value,
+						'status' => WP_Http::INTERNAL_SERVER_ERROR,
+					)
+				);
+			}
+		}
+
+		return true;
 	}
 
 	/**
