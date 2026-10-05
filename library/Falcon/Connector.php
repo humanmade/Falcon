@@ -260,7 +260,10 @@ abstract class Falcon_Connector {
 				return new WP_Error(
 					'falcon.rest.update_preferences_field.invalid_type',
 					__( 'Attempted to update invalid type', 'falcon' ),
-					compact( 'type' )
+					array(
+						'type' => $type,
+						'status' => WP_Http::BAD_REQUEST,
+					)
 				);
 			}
 
@@ -275,7 +278,11 @@ abstract class Falcon_Connector {
 				return new WP_Error(
 					'falcon.rest.update_preferences_field.invalid_value',
 					__( 'Invalid value for type', 'falcon' ),
-					compact( 'type', 'value' )
+					array(
+						'type' => $type,
+						'value' => $value,
+						'status' => WP_Http::BAD_REQUEST,
+					)
 				);
 			}
 
@@ -291,7 +298,11 @@ abstract class Falcon_Connector {
 				return new WP_Error(
 					'falcon.rest.update_preferences_field.could_not_update',
 					__( 'Could not update preference', 'falcon' ),
-					compact( 'type', 'value' )
+					array(
+						'type' => $type,
+						'value' => $value,
+						'status' => WP_Http::INTERNAL_SERVER_ERROR,
+					)
 				);
 			}
 		}

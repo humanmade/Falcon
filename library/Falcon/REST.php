@@ -65,7 +65,10 @@ class Falcon_REST {
 				return new WP_Error(
 					'falcon.rest.update_preferences_field.invalid_type',
 					__( 'Attempted to set preference for invalid connector', 'falcon' ),
-					compact( 'type' )
+					[
+						'type' => $type,
+						'status' => WP_Http::BAD_REQUEST,
+					]
 				);
 			}
 
@@ -82,7 +85,10 @@ class Falcon_REST {
 				return new WP_Error(
 					'falcon.rest.update_preferences_field.unhandled_update',
 					__( 'Connector does not support updating via the API', 'falcon' ),
-					compact( 'type' )
+					[
+						'type' => $type,
+						'status' => WP_Http::BAD_REQUEST,
+					]
 				);
 			}
 			if ( is_wp_error( $result ) ) {
