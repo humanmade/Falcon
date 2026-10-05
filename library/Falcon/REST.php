@@ -110,6 +110,9 @@ class Falcon_REST {
 		$schema = [
 			'description' => __( 'Falcon notification preferences', 'falcon' ),
 			'type' => 'object',
+			// Preferences are private to the user, so never expose in the
+			// public view context.
+			'context' => [ 'edit' ],
 			'properties' => [],
 		];
 
