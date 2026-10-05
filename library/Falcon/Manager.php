@@ -45,6 +45,15 @@ class Falcon_Manager extends Falcon_Autohooker {
 					border-right: none;
 				}
 
+				.falcon-grid thead {
+					background: inherit;
+					position: sticky;
+					top: 0;
+				}
+				html.wp-toolbar .falcon-grid thead {
+					top: 32px;
+				}
+
 				.falcon-grid thead th,
 				.falcon-grid thead td,
 				.falcon-grid tbody td {
@@ -244,12 +253,23 @@ class Falcon_Manager extends Falcon_Autohooker {
 			$value = absint( $site['blog_id'] );
 			$enabled = in_array( $value, $current );
 
+			$path = $details->path;
+			if ( $path === '/' ) {
+				$path = '';
+			}
+
+			$label = sprintf(
+				'%s (%s)',
+				esc_html( $details->blogname ),
+				esc_html( $details->domain . $path )
+			);
+
 			printf(
 				'<label><input type="checkbox" name="%s[]" value="%s" %s /> %s</label><br />',
 				'falcon_enabled_sites',
 				esc_attr( $value ),
 				checked( $enabled, true, false ),
-				esc_html( $details->blogname )
+				$label
 			);
 
 		}
