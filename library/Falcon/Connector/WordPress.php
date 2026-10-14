@@ -95,6 +95,13 @@ class Falcon_Connector_WordPress extends Falcon_Connector {
 			return;
 		}
 
+		// Concurrent WP-Cron runs can both pass the sent check below, as the
+		// flag is only set after sending. The lock is atomic only with a
+		// persistent object cache.
+		if ( ! wp_cache_add( 'notify_lock_' . $id, true, 'falcon', 5 * MINUTE_IN_SECONDS ) ) {
+			return;
+		}
+
 		// Don't notify if we're already done so for the post
 		$has_sent = get_post_meta( $id, static::SENT_META_KEY, true );
 
