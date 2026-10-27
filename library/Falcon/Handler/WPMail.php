@@ -25,7 +25,7 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 		foreach ( $users as $user ) {
 
 			$headers = array(
-				'From'         => sprintf( '%s <%s>', $author, $from ),
+				'From'         => sprintf( '"%s" <%s>', mb_encode_mimeheader( $author ), $from ),
 				'Reply-To'     => sprintf( '%s', $message->get_reply_address( $user ) ),
 				'Content-Type' => 'text/html',
 			);
@@ -57,7 +57,7 @@ class Falcon_Handler_WPMail implements Falcon_Handler {
 			}
 
 			$result = wp_mail(
-				sprintf( '%s <%s>', $user->display_name, $user->user_email ),
+				sprintf( '"%s" <%s>', mb_encode_mimeheader( $user->display_name ), $user->user_email ),
 				$message->get_subject(),
 				$message->get_html(),
 				array_values( $headers )
