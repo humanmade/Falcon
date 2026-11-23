@@ -122,12 +122,123 @@ class Falcon_Manager extends Falcon_Autohooker {
 		wp_add_dashboard_widget( 'falcon_notification_settings', __( 'Notification Settings', 'falcon' ), array( get_class(), 'output_dashboard_widget' ) );
 	}
 
+	/**
+	 * @wp-action rest_api_init
+	 */
+	public static function register_rest_routes() {
+		register_rest_route( 'falcon/v1', '/notification-settings', array(
+			'methods'             => 'POST',
+			'callback'            => array( get_class(), 'update_current_user_notification_settings' ),
+			'permission_callback' => array( get_class(), 'can_update_current_user_notification_settings' ),
+			'args'                => array(
+				'settings' => array(
+					'required' => true,
+					'type'     => 'object',
+				),
+			),
+		) );
+	}
+
+	public static function can_update_current_user_notification_settings() {
+		return is_user_logged_in() && current_user_can( 'read' ) && Falcon::is_enabled_for_site();
+	}
+
+	public static function update_current_user_notification_settings( WP_REST_Request $request ) {
+		$settings = $request->get_param( 'settings' );
+
+		if ( ! is_array( $settings ) ) {
+			return new WP_Error(
+				'falcon_invalid_notification_settings',
+				__( 'Notification settings must be an object.', 'falcon' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$args = array();
+		foreach ( $settings as $key => $value ) {
+			if ( ! is_scalar( $value ) ) {
+				continue;
+			}
+
+			$key = sanitize_text_field( wp_unslash( $key ) );
+			$value = sanitize_text_field( wp_unslash( $value ) );
+
+			// Falcon_Connector::save_profile_settings() expects the same mangled
+			// field names PHP creates for normal form submissions.
+			$args[ str_replace( '.', '_', $key ) ] = $value;
+		}
+
+		do_action( 'falcon.manager.save_profile_fields', get_current_user_id(), $args );
+
+		return rest_ensure_response( array(
+			'success' => true,
+		) );
+	}
+
 	public static function output_dashboard_widget() {
 		$user = wp_get_current_user();
 		?>
-		<table class="form-table">
-			<?php do_action( 'falcon.manager.profile_fields', $user ) ?>
-		</table>
+		<form id="falcon-notification-settings-form">
+			<table class="form-table">
+				<?php do_action( 'falcon.manager.profile_fields', $user ) ?>
+			</table>
+
+			<p>
+				<button type="submit" class="button button-primary"><?php esc_html_e( 'Save notification settings', 'falcon' ); ?></button>
+				<span class="spinner" aria-hidden="true"></span>
+				<span class="falcon-notification-settings-status" role="status" aria-live="polite"></span>
+			</p>
+		</form>
+
+		<script>
+			(function () {
+				var form = document.getElementById('falcon-notification-settings-form');
+				if (!form || !window.fetch || !window.FormData) {
+					return;
+				}
+
+				var button = form.querySelector('button[type="submit"]');
+				var spinner = form.querySelector('.spinner');
+				var status = form.querySelector('.falcon-notification-settings-status');
+
+				form.addEventListener('submit', function (event) {
+					event.preventDefault();
+
+					var settings = {};
+					var data = new FormData(form);
+					data.forEach(function (value, key) {
+						settings[key] = value;
+					});
+
+					button.disabled = true;
+					spinner.classList.add('is-active');
+					status.textContent = <?php echo wp_json_encode( __( 'Saving…', 'falcon' ) ); ?>;
+
+					fetch(<?php echo wp_json_encode( rest_url( 'falcon/v1/notification-settings' ) ); ?>, {
+						method: 'POST',
+						credentials: 'same-origin',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-WP-Nonce': <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>
+						},
+						body: JSON.stringify({ settings: settings })
+					}).then(function (response) {
+						if (!response.ok) {
+							throw new Error(response.statusText || 'Request failed');
+						}
+
+						return response.json();
+					}).then(function () {
+						status.textContent = <?php echo wp_json_encode( __( 'Settings saved.', 'falcon' ) ); ?>;
+					}).catch(function () {
+						status.textContent = <?php echo wp_json_encode( __( 'Could not save settings.', 'falcon' ) ); ?>;
+					}).then(function () {
+						button.disabled = false;
+						spinner.classList.remove('is-active');
+					});
+				});
+			}());
+		</script>
 		<?php
 	}
 
