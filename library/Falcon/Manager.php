@@ -136,7 +136,10 @@ class Falcon_Manager extends Falcon_Autohooker {
 			'archived' => false,
 			'deleted' => false,
 			'spam' => false,
-			'number' => -1,
+
+			// Ensure we get *all* sites. This doesn't scale, so should be
+			// replaced with a better system some day :>
+			'number' => null,
 		) );
 
 		return apply_filters( 'falcon.manager.available_sites', $sites );
