@@ -132,10 +132,11 @@ class Falcon_Manager extends Falcon_Autohooker {
 	}
 
 	protected static function available_sites() {
-		$sites = wp_get_sites( array(
+		$sites = get_sites( array(
 			'archived' => false,
 			'deleted' => false,
 			'spam' => false,
+			'number' => -1,
 		) );
 
 		return apply_filters( 'falcon.manager.available_sites', $sites );
@@ -249,19 +250,18 @@ class Falcon_Manager extends Falcon_Autohooker {
 		$current = Falcon::get_option( 'falcon_enabled_sites', array() );
 
 		foreach ( $sites as $site ) {
-			$details = get_blog_details( $site['blog_id'] );
-			$value = absint( $site['blog_id'] );
+			$value = absint( $site->blog_id );
 			$enabled = in_array( $value, $current );
 
-			$path = $details->path;
+			$path = $site->path;
 			if ( $path === '/' ) {
 				$path = '';
 			}
 
 			$label = sprintf(
 				'%s (%s)',
-				esc_html( $details->blogname ),
-				esc_html( $details->domain . $path )
+				esc_html( $site->blogname ),
+				esc_html( $site->domain . $path )
 			);
 
 			printf(
